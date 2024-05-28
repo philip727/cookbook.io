@@ -22,6 +22,5 @@ pub fn get_signed_jwt_token(
     };
 
     let token = Token::new(header, claims).sign_with_key(&key).unwrap();
-
     token
 }
