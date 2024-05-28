@@ -3,7 +3,7 @@ use actix_web::{
     App, HttpServer,
 };
 use dotenv::dotenv;
-use routes::users::services::{get_all_users, get_user_by_id, register_user};
+use routes::users::services::{get_all_users, get_user_by_id, login_user, register_user};
 use sqlx::postgres::PgPoolOptions;
 
 pub mod database;
@@ -25,7 +25,8 @@ async fn main() -> std::io::Result<()> {
                 scope("/users")
                     .service(get_all_users)
                     .service(get_user_by_id)
-                    .service(register_user),
+                    .service(register_user)
+                    .service(login_user),
             ),
         )
     })

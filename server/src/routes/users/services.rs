@@ -1,26 +1,23 @@
+use std::ops::Deref;
+
 use actix_web::{
     get, post,
     web::{self, Data, Path},
     HttpResponse, Responder,
 };
-use anyhow::Context;
 use bcrypt::{hash, DEFAULT_COST};
-use regex::Regex;
 use serde::Deserialize;
 use serde_json::json;
 use sqlx::{Pool, Postgres};
 
-use crate::{
-    database::models::User,
-    routes::{error::PrettyErrorResponse, users::helpers::is_password_valid},
-};
+use crate::{database::models::User, pretty_error, routes::error::PrettyErrorResponse};
 
 #[get("/all")]
 pub async fn get_all_users(db: Data<Pool<Postgres>>) -> impl Responder {
     let users = User::get_all_public(&db).await;
 
     if let Err(e) = users {
-        let error = PrettyErrorResponse::new("Unable to get all users".into(), e.to_string());
+        pretty_error!("Unable to get all users".to_string(), e.to_string(), error);
         return HttpResponse::InternalServerError().json(error);
     }
 
@@ -37,9 +34,10 @@ pub async fn get_user_by_id(db: Data<Pool<Postgres>>, path: Path<i32>) -> impl R
     }
 
     let Some(user) = user.unwrap() else {
-        let error = PrettyErrorResponse::new(
-            "No user found".into(),
-            format!("Couldn't find user with the id: {}", id).into(),
+        pretty_error!(
+            "No user found".to_string(),
+            format!("Couldn't find user with the id: {}", id),
+            error
         );
 
         return HttpResponse::NotFound().json(error);
@@ -62,56 +60,59 @@ pub async fn register_user(
     pool: Data<Pool<Postgres>>,
 ) -> impl Responder {
     // Ensures its a valid username
-    let username_re = Regex::new(r"^[a-zA-Z0-9_]+$").unwrap();
-    if !username_re.is_match(&payload.username) {
-        let error = PrettyErrorResponse::new(
-            "Invalid username".into(),
+    if !User::username_is_valid(&payload.username) {
+        pretty_error!(
+            "Invalid username".to_string(),
             format!(
                 "The username: '{}' is invalid, it may only contain alphanumerical values and underscores", 
                 payload.username
             ),
+            error
         );
 
         return HttpResponse::BadRequest().json(error);
     }
 
-    if User::username_taken(&pool, &payload.username).await {
-        let error = PrettyErrorResponse::new(
-            "Username already taken".into(),
+    if User::has_username_been_used(&pool, &payload.username).await {
+        pretty_error!(
+            "Username already taken".to_string(),
             format!("The username: '{}' is already taken", payload.username),
+            error
         );
 
         return HttpResponse::Conflict().json(error);
     }
 
     // Verifies the email
-    let email_re = Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").unwrap();
-    if !email_re.is_match(&payload.email) {
-        let error = PrettyErrorResponse::new(
-            "Invalid email".into(),
+    if !User::email_is_valid(&payload.email) {
+        pretty_error!(
+            "Invalid email".to_string(),
             format!(
                 "The email: '{}' is invalid, please use a valid email format",
                 payload.email
             ),
+            error
         );
 
         return HttpResponse::BadRequest().json(error);
     }
 
-    if User::email_taken(&pool, &payload.email).await {
-        let error = PrettyErrorResponse::new(
-            "Email already taken".into(),
+    if User::has_email_been_used(&pool, &payload.email).await {
+        pretty_error!(
+            "Email already taken".to_string(),
             format!("The email: '{}' is already taken", payload.email),
+            error
         );
 
         return HttpResponse::Conflict().json(error);
     }
 
     // Checks if password is secure enough
-    if !is_password_valid(&payload.password) {
-        let error = PrettyErrorResponse::new(
-            "Invalid password".into(),
-            "Your password is not strong enough. It must be at least 8 characters long, contain a combination of uppercase and lowercase letters, at least one digit and at least one special character".to_string()
+    if !User::is_password_valid(&payload.password) {
+        pretty_error!(
+            "Invalid password".to_string(),
+            "Your password is not strong enough. It must be at least 8 characters long, contain a combination of uppercase and lowercase letters, at least one digit and at least one special character".to_string(),
+            error
         );
 
         return HttpResponse::BadRequest().json(error);
@@ -119,9 +120,10 @@ pub async fn register_user(
 
     // Makes sure the two passwords provided are the same
     if payload.password != payload.confirm_password {
-        let error = PrettyErrorResponse::new(
-            "Passwords do not match".into(),
+        pretty_error!(
+            "Passwords do not match".to_string(),
             "Make sure your passwords match".to_string(),
+            error
         );
 
         return HttpResponse::BadRequest().json(error);
@@ -129,18 +131,122 @@ pub async fn register_user(
 
     let hash = hash(&payload.password, DEFAULT_COST);
     if let Err(e) = hash {
-        let error = PrettyErrorResponse::new("Failed to hash password".into(), e.to_string());
+        pretty_error!("Failed to hash password".to_string(), e.to_string(), error);
 
         return HttpResponse::InternalServerError().json(error);
     }
 
     let insert_user = User::insert(&pool, &payload.username, &payload.email, &hash.unwrap()).await;
     if let Err(e) = insert_user {
-        let error = PrettyErrorResponse::new("Register user failed".into(), e.to_string());
+        pretty_error!("Register user failed".to_string(), e.to_string(), error);
 
         return HttpResponse::InternalServerError().json(error);
     }
 
     let (uid, username) = insert_user.unwrap();
     HttpResponse::Ok().json(json!({"uid": uid, "username": username}))
+}
+
+#[derive(Deserialize)]
+struct LoginPayload {
+    username: Option<String>,
+    email: Option<String>,
+    password: String,
+}
+
+enum LoginIdentifier {
+    Username(String),
+    Email(String),
+}
+
+impl Deref for LoginIdentifier {
+    type Target = String;
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Self::Username(s) => s,
+            Self::Email(s) => s,
+        }
+    }
+}
+
+#[post("/login")]
+pub async fn login_user(
+    payload: web::Json<LoginPayload>,
+    pool: Data<Pool<Postgres>>,
+) -> impl Responder {
+    let mut identifier: Option<LoginIdentifier> = None;
+    // If we have a username set as identifier
+    if let Some(username) = &payload.username {
+        identifier = Some(LoginIdentifier::Username(username.to_string()));
+    }
+
+    // If we have an email and the identifier is still none then we use email
+    if let (None, Some(email)) = (&identifier, &payload.email) {
+        identifier = Some(LoginIdentifier::Email(email.to_string()));
+    }
+
+    // If no identifier was provided then we must return
+    if identifier.is_none() {
+        pretty_error!(
+            "No identifier was provided".to_string(),
+            format!("Please provide a username or email"),
+            error
+        );
+
+        return HttpResponse::BadRequest().json(error);
+    }
+
+    let user = match identifier.unwrap() {
+        // We need unique errors so we check for none inside of match instead
+        LoginIdentifier::Username(username) => {
+            let user = User::get_by_name(&pool, &username).await.unwrap_or(None);
+            if let None = user {
+                pretty_error!(
+                    "No user".to_string(),
+                    format!("There is no user with the username: {}", username),
+                    error
+                );
+
+                return HttpResponse::BadRequest().json(error);
+            }
+
+            user.unwrap()
+        }
+        LoginIdentifier::Email(email) => {
+            let user = User::get_by_email(&pool, &email).await.unwrap_or(None);
+            if let None = user {
+                pretty_error!(
+                    "No user".to_string(),
+                    format!("There is no user with the email: {}", email),
+                    error
+                );
+
+                return HttpResponse::BadRequest().json(error);
+            }
+
+            user.unwrap()
+        }
+    };
+
+    let Ok(pw_match) = bcrypt::verify(&payload.password, &user.password) else {
+        pretty_error!(
+            "Failed to verify password".to_string(),
+            "Failed to verify the password provided, please contact support".to_string(),
+            error
+        );
+
+        return HttpResponse::BadRequest().json(error);
+    };
+
+    if !pw_match {
+        pretty_error!(
+            "Incorrect password".to_string(),
+            "The password provided was incorrect, please try again".to_string(),
+            error
+        );
+
+        return HttpResponse::BadRequest().json(error);
+    }
+
+    HttpResponse::Ok().body("")
 }

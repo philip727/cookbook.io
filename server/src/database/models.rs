@@ -1,4 +1,5 @@
 use anyhow::Context;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sqlx::{prelude::FromRow, types::Json, Pool, Postgres, Row};
@@ -140,16 +141,62 @@ impl User {
     }
 
     // Queries for a user with that name and checks if we get a result
-    pub async fn username_taken(pool: &Pool<Postgres>, name: &str) -> bool {
+    pub async fn has_username_been_used(pool: &Pool<Postgres>, name: &str) -> bool {
         let user = Self::get_by_name(&pool, name).await.unwrap_or(None);
 
         user.is_some()
     }
 
     // Queries for a user with that email and checks if we get a result
-    pub async fn email_taken(pool: &Pool<Postgres>, email: &str) -> bool {
+    pub async fn has_email_been_used(pool: &Pool<Postgres>, email: &str) -> bool {
         let user = Self::get_by_email(&pool, email).await.unwrap_or(None);
 
         user.is_some()
+    }
+
+    pub fn username_is_valid(u: &str) -> bool {
+        let username_re = Regex::new(r"^[a-zA-Z0-9_]+$").unwrap();
+
+        username_re.is_match(u)
+    }
+
+    pub fn email_is_valid(e: &str) -> bool {
+        let email_re = Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").unwrap();
+
+        email_re.is_match(e)
+    }
+
+    pub fn is_password_valid(pwd: &str) -> bool {
+        let mut has_whitespace = false;
+        let mut has_upper = false;
+        let mut has_lower = false;
+        let mut has_digit = false;
+        let mut has_special_character = false;
+
+        for c in pwd.chars() {
+            has_whitespace |= c.is_whitespace();
+            has_lower |= c.is_lowercase();
+            has_upper |= c.is_uppercase();
+            has_digit |= c.is_digit(10);
+            has_special_character |= c == '&'
+                || c == '@'
+                || c == '#'
+                || c == '%'
+                || c == '^'
+                || c == '*'
+                || c == '('
+                || c == ')'
+                || c == '!'
+                || c == '?'
+                || c == '<'
+                || c == '>'
+        }
+
+        !has_whitespace
+            && has_upper
+            && has_lower
+            && has_digit
+            && has_special_character
+            && pwd.len() >= 8
     }
 }

@@ -14,3 +14,10 @@ impl PrettyErrorResponse {
         }
     }
 }
+
+#[macro_export]
+macro_rules! pretty_error {
+    ($title:expr, $description:expr, $err:ident) => {
+        let $err = PrettyErrorResponse::new($title.into(), $description.into());
+    };
+}
