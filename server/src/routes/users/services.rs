@@ -57,7 +57,10 @@ struct RegisterPayload {
 }
 
 #[post("/register")]
-pub async fn register_user(payload: web::Json<RegisterPayload>, db: Data<Pool<Postgres>>) -> impl Responder {
+pub async fn register_user(
+    payload: web::Json<RegisterPayload>,
+    pool: Data<Pool<Postgres>>,
+) -> impl Responder {
     // Ensures its a valid username
     let username_re = Regex::new(r"^[a-zA-Z0-9_]+$").unwrap();
     if !username_re.is_match(&payload.username) {
@@ -72,13 +75,10 @@ pub async fn register_user(payload: web::Json<RegisterPayload>, db: Data<Pool<Po
         return HttpResponse::BadRequest().json(error);
     }
 
-    if User::username_taken(&db, &payload.username).await {
+    if User::username_taken(&pool, &payload.username).await {
         let error = PrettyErrorResponse::new(
             "Username already taken".into(),
-            format!(
-                "The username: '{}' is already taken", 
-                payload.username
-            ),
+            format!("The username: '{}' is already taken", payload.username),
         );
 
         return HttpResponse::Conflict().json(error);
@@ -98,13 +98,10 @@ pub async fn register_user(payload: web::Json<RegisterPayload>, db: Data<Pool<Po
         return HttpResponse::BadRequest().json(error);
     }
 
-    if User::email_taken(&db, &payload.email).await {
+    if User::email_taken(&pool, &payload.email).await {
         let error = PrettyErrorResponse::new(
             "Email already taken".into(),
-            format!(
-                "The email: '{}' is already taken", 
-                payload.email
-            ),
+            format!("The email: '{}' is already taken", payload.email),
         );
 
         return HttpResponse::Conflict().json(error);
@@ -120,7 +117,7 @@ pub async fn register_user(payload: web::Json<RegisterPayload>, db: Data<Pool<Po
         return HttpResponse::BadRequest().json(error);
     }
 
-    // Make sure passwords match on confirm
+    // Makes sure the two passwords provided are the same
     if payload.password != payload.confirm_password {
         let error = PrettyErrorResponse::new(
             "Passwords do not match".into(),
@@ -130,16 +127,20 @@ pub async fn register_user(payload: web::Json<RegisterPayload>, db: Data<Pool<Po
         return HttpResponse::BadRequest().json(error);
     }
 
-    // Hash password
     let hash = hash(&payload.password, DEFAULT_COST);
     if let Err(e) = hash {
-        let error = PrettyErrorResponse::new(
-            "Failed to hash password".into(),
-            e.to_string()
-        );
+        let error = PrettyErrorResponse::new("Failed to hash password".into(), e.to_string());
 
         return HttpResponse::InternalServerError().json(error);
     }
 
-    HttpResponse::Ok().body("Ok")
+    let insert_user = User::insert(&pool, &payload.username, &payload.email, &hash.unwrap()).await;
+    if let Err(e) = insert_user {
+        let error = PrettyErrorResponse::new("Register user failed".into(), e.to_string());
+
+        return HttpResponse::InternalServerError().json(error);
+    }
+
+    let (uid, username) = insert_user.unwrap();
+    HttpResponse::Ok().json(json!({"uid": uid, "username": username}))
 }
