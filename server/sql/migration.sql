@@ -21,3 +21,17 @@ create table recipes
         foreign key (user_id) references users
             on delete cascade
 );
+
+create table recipe_steps
+(
+    id          serial,
+    recipe_id   integer      not null,
+    description varchar(255) not null,
+    step_order  integer      not null,
+    primary key (id),
+    constraint unique_recipe_step_order
+        unique (recipe_id, step_order),
+    constraint fk_recipe
+        foreign key (recipe_id) references recipes
+            on delete cascade
+);
