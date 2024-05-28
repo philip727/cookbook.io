@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::collections::BTreeMap;
 
 use actix_web::{
     get, post,
@@ -6,11 +6,18 @@ use actix_web::{
     HttpResponse, Responder,
 };
 use bcrypt::{hash, DEFAULT_COST};
-use serde::Deserialize;
 use serde_json::json;
 use sqlx::{Pool, Postgres};
 
-use crate::{database::models::User, pretty_error, routes::error::PrettyErrorResponse};
+use crate::{
+    auth::helpers::get_signed_jwt_token,
+    database::models::User,
+    pretty_error,
+    routes::{
+        error::PrettyErrorResponse,
+        users::helpers::{LoginIdentifier, LoginPayload, RegisterPayload},
+    },
+};
 
 #[get("/all")]
 pub async fn get_all_users(db: Data<Pool<Postgres>>) -> impl Responder {
@@ -44,14 +51,6 @@ pub async fn get_user_by_id(db: Data<Pool<Postgres>>, path: Path<i32>) -> impl R
     };
 
     HttpResponse::Ok().json(user)
-}
-
-#[derive(Deserialize)]
-struct RegisterPayload {
-    username: String,
-    email: String,
-    password: String,
-    confirm_password: String,
 }
 
 #[post("/register")]
@@ -147,28 +146,6 @@ pub async fn register_user(
     HttpResponse::Ok().json(json!({"uid": uid, "username": username}))
 }
 
-#[derive(Deserialize)]
-struct LoginPayload {
-    username: Option<String>,
-    email: Option<String>,
-    password: String,
-}
-
-enum LoginIdentifier {
-    Username(String),
-    Email(String),
-}
-
-impl Deref for LoginIdentifier {
-    type Target = String;
-    fn deref(&self) -> &Self::Target {
-        match self {
-            Self::Username(s) => s,
-            Self::Email(s) => s,
-        }
-    }
-}
-
 #[post("/login")]
 pub async fn login_user(
     payload: web::Json<LoginPayload>,
@@ -248,5 +225,11 @@ pub async fn login_user(
         return HttpResponse::BadRequest().json(error);
     }
 
-    HttpResponse::Ok().body("")
+    // The claims for out jwt
+    let mut claims = BTreeMap::new();
+    claims.insert("uid".to_string(), user.uid.to_string());
+    claims.insert("username".to_string(), user.username);
+    let jwt_token = get_signed_jwt_token(claims);
+
+    HttpResponse::Ok().body(jwt_token.as_str().to_string())
 }

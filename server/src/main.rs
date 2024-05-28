@@ -8,6 +8,7 @@ use sqlx::postgres::PgPoolOptions;
 
 pub mod database;
 pub mod routes;
+pub mod auth;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

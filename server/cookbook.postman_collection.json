@@ -89,6 +89,42 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "login user",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {}
+			},
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"username\": \"coolname\",\r\n    \"email\": \"coolemail@gmail.com\",\r\n    \"password\": \"Banana42@\",\r\n    \"confirm_password\": \"Banana42@\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8080/v1/users/register",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8080",
+					"path": [
+						"v1",
+						"users",
+						"register"
+					]
+				}
+			},
+			"response": []
 		}
 	]
 }

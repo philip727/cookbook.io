@@ -14,3 +14,6 @@ anyhow = "1.0.86"
 dotenv = "0.15.0"
 regex = "1.10.4"
 bcrypt = "0.15.1"
+jwt = "0.16.0"
+hmac = { version = "0.12.1", features = ["reset"] }
+sha2 = "0.10.8"
