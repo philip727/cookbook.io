@@ -3,7 +3,10 @@ use actix_web::{
     App, HttpServer,
 };
 use dotenv::dotenv;
-use routes::users::services::{get_all_users, get_user_by_id, login_user, register_user};
+use routes::{
+    recipes::services::get_all_recipes,
+    users::services::{get_all_users, get_user_by_id, login_user, register_user},
+};
 use sqlx::postgres::PgPoolOptions;
 
 pub mod auth;
@@ -22,13 +25,15 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new().app_data(Data::new(pool.clone())).service(
-            scope("/v1").service(
-                scope("/users")
-                    .service(get_all_users)
-                    .service(get_user_by_id)
-                    .service(register_user)
-                    .service(login_user),
-            ),
+            scope("/v1")
+                .service(
+                    scope("/users")
+                        .service(get_all_users)
+                        .service(get_user_by_id)
+                        .service(register_user)
+                        .service(login_user),
+                )
+                .service(scope("/recipes").service(get_all_recipes)),
         )
     })
     .bind(("127.0.0.1", 8080))?

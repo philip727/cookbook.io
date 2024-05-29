@@ -12,10 +12,10 @@ create table users
 create table recipes
 (
     id           serial,
-    title        varchar(30)                         not null,
-    description  varchar(100)                        not null,
-    user_id      integer                             not null,
-    date_created timestamp default CURRENT_TIMESTAMP not null,
+    title        varchar(30)                                        not null,
+    description  varchar(100)                                       not null,
+    user_id      integer                                            not null,
+    date_created timestamp with time zone default CURRENT_TIMESTAMP not null,
     primary key (id),
     constraint fk_user
         foreign key (user_id) references users

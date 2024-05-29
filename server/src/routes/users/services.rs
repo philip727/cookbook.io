@@ -11,7 +11,7 @@ use sqlx::{Pool, Postgres};
 
 use crate::{
     auth::helpers::get_signed_jwt_token,
-    database::models::User,
+    database::models::user::User,
     pretty_error,
     routes::{
         error::PrettyErrorResponse,

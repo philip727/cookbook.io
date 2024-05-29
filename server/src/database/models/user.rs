@@ -2,7 +2,7 @@ use anyhow::Context;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use sqlx::{prelude::FromRow, types::Json, Pool, Postgres, Row};
+use sqlx::{prelude::FromRow, Pool, Postgres, Row};
 
 #[derive(Serialize, Deserialize, Debug, FromRow)]
 pub struct User {
