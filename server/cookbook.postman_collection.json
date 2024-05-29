@@ -7,124 +7,168 @@
 	},
 	"item": [
 		{
-			"name": "all users",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://127.0.0.1:8080/v1/users/all",
-					"protocol": "http",
-					"host": [
-						"127",
-						"0",
-						"0",
-						"1"
-					],
-					"port": "8080",
-					"path": [
-						"v1",
-						"users",
-						"all"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "user by id",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://127.0.0.1:8080/v1/users/2",
-					"protocol": "http",
-					"host": [
-						"127",
-						"0",
-						"0",
-						"1"
-					],
-					"port": "8080",
-					"path": [
-						"v1",
-						"users",
-						"2"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "register user",
-			"protocolProfileBehavior": {
-				"disabledSystemHeaders": {}
-			},
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"username\": \"coolname\",\r\n    \"email\": \"coolemail@gmail.com\",\r\n    \"password\": \"Banana42@\",\r\n    \"confirm_password\": \"Banana42@\"\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
+			"name": "recipes",
+			"item": [
+				{
+					"name": "get paged recipes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:8080/v1/recipes/all?offset=0&limit=5",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"recipes",
+								"all"
+							],
+							"query": [
+								{
+									"key": "offset",
+									"value": "0"
+								},
+								{
+									"key": "limit",
+									"value": "5"
+								}
+							]
 						}
-					}
-				},
-				"url": {
-					"raw": "http://127.0.0.1:8080/v1/users/register",
-					"protocol": "http",
-					"host": [
-						"127",
-						"0",
-						"0",
-						"1"
-					],
-					"port": "8080",
-					"path": [
-						"v1",
-						"users",
-						"register"
-					]
+					},
+					"response": []
 				}
-			},
-			"response": []
+			]
 		},
 		{
-			"name": "login user",
-			"protocolProfileBehavior": {
-				"disabledSystemHeaders": {}
-			},
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"username\": \"coolname\",\r\n    \"email\": \"coolemail@gmail.com\",\r\n    \"password\": \"Banana42@\",\r\n    \"confirm_password\": \"Banana42@\"\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
+			"name": "users",
+			"item": [
+				{
+					"name": "all users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:8080/v1/users/all",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"users",
+								"all"
+							]
 						}
-					}
+					},
+					"response": []
 				},
-				"url": {
-					"raw": "http://127.0.0.1:8080/v1/users/register",
-					"protocol": "http",
-					"host": [
-						"127",
-						"0",
-						"0",
-						"1"
-					],
-					"port": "8080",
-					"path": [
-						"v1",
-						"users",
-						"register"
-					]
+				{
+					"name": "user by id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:8080/v1/users/2",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"users",
+								"2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "register user",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\": \"coolname\",\r\n    \"email\": \"coolemail@gmail.com\",\r\n    \"password\": \"Banana42@\",\r\n    \"confirm_password\": \"Banana42@\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8080/v1/users/register",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"users",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login user",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"coolemail@gmail.com\",\r\n    \"password\": \"Banana42@\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8080/v1/users/login",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"users",
+								"login"
+							]
+						}
+					},
+					"response": []
 				}
-			},
-			"response": []
+			]
 		}
 	]
 }
