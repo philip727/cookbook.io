@@ -65,6 +65,24 @@ impl User {
         Ok(values)
     }
 
+    pub async fn get_by_id(pool: &Pool<Postgres>, id: i32) -> Result<Option<User>, anyhow::Error> {
+        let row = sqlx::query_as::<_, User>(r#"SELECT * FROM users WHERE uid = $1"#)
+            .bind(id)
+            .fetch_one(pool)
+            .await;
+
+        if let Err(e) = row {
+            // If we dont find one, the query was still a success but we have no result
+            if let sqlx::Error::RowNotFound = e {
+                return Ok(None);
+            }
+
+            return Err(e).context(format!("Failed to find user with id: {}", id));
+        }
+
+        Ok(Some(row.unwrap()))
+    }
+
     // Get a user by their id with publicly safe data
     pub async fn get_by_id_public(
         pool: &Pool<Postgres>,
