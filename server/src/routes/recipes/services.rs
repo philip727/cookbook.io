@@ -1,5 +1,5 @@
 use crate::{
-    database::models::user::User,
+    database::models::{recipes::RecipeSteps, user::User},
     routes::{
         error::PrettyErrorResponse,
         recipes::helpers::{FullRecipeDetails, GetRecipeQueryParams},
@@ -10,7 +10,6 @@ use actix_web::{
     web::{self, Data, Path},
     HttpResponse, Responder,
 };
-use serde_json::{json, Value};
 use sqlx::{Pool, Postgres};
 
 use crate::{database::models::recipes::Recipe, pretty_error};
@@ -106,4 +105,31 @@ pub async fn get_recipe_by_id(pool: Data<Pool<Postgres>>, path: Path<i32>) -> im
 
     let recipe = FullRecipeDetails::new(recipe, user);
     HttpResponse::Ok().json(recipe)
+}
+
+#[get("/steps/{id}")]
+pub async fn get_recipe_steps_from_recipe(
+    pool: Data<Pool<Postgres>>,
+    path: Path<i32>,
+) -> impl Responder {
+    let id = path.into_inner();
+    let recipe_steps = RecipeSteps::get_recipe_steps(&pool, id).await;
+
+    if let Err(e) = recipe_steps {
+        pretty_error!("No recipe steps found".to_string(), e.to_string(), error);
+
+        return HttpResponse::NotFound().json(error);
+    }
+
+    let Some(recipe_steps) = recipe_steps.unwrap() else {
+        pretty_error!(
+            "No steps found".to_string(),
+            format!("Couldn't the steps for the recipe with the id: {}", id),
+            error
+        );
+
+        return HttpResponse::NotFound().json(error);
+    };
+
+    HttpResponse::Ok().json(recipe_steps)
 }

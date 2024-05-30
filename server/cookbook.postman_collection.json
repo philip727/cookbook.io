@@ -10,7 +10,7 @@
 			"name": "recipes",
 			"item": [
 				{
-					"name": "get paged recipes",
+					"name": "all recipes with params",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -38,6 +38,79 @@
 									"key": "limit",
 									"value": "5"
 								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "all paged recipes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:8080/v1/recipes/all",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"recipes",
+								"all"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "recipe by id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:8080/v1/recipes/all",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"recipes",
+								"all"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "recipe steps",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:8080/v1/recipes/steps/1",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"recipes",
+								"steps",
+								"1"
 							]
 						}
 					},
