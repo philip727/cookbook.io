@@ -4,7 +4,7 @@ use actix_web::{
 };
 use dotenv::dotenv;
 use routes::{
-    recipes::services::get_all_recipes,
+    recipes::services::{get_all_recipes, get_recipe_by_id},
     users::services::{get_all_users, get_user_by_id, login_user, register_user},
 };
 use sqlx::postgres::PgPoolOptions;
@@ -33,7 +33,11 @@ async fn main() -> std::io::Result<()> {
                         .service(register_user)
                         .service(login_user),
                 )
-                .service(scope("/recipes").service(get_all_recipes)),
+                .service(
+                    scope("/recipes")
+                        .service(get_all_recipes)
+                        .service(get_recipe_by_id),
+                ),
         )
     })
     .bind(("127.0.0.1", 8080))?

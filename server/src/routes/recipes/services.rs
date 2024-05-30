@@ -1,7 +1,13 @@
-use crate::{database::models::user::User, routes::{error::PrettyErrorResponse, recipes::helpers::GetRecipeQueryParams}};
+use crate::{
+    database::models::user::User,
+    routes::{
+        error::PrettyErrorResponse,
+        recipes::helpers::{FullRecipeDetails, GetRecipeQueryParams},
+    },
+};
 use actix_web::{
     get,
-    web::{self, Data},
+    web::{self, Data, Path},
     HttpResponse, Responder,
 };
 use serde_json::{json, Value};
@@ -34,7 +40,6 @@ pub async fn get_all_recipes(
         Recipe::get_with_pagination(&pool, pagination.offset.unwrap(), pagination.limit.unwrap())
             .await;
 
-
     if let Err(e) = recipes {
         pretty_error!("Failed to get recipes".to_string(), e.to_string(), error);
 
@@ -43,7 +48,7 @@ pub async fn get_all_recipes(
 
     let recipes = recipes.unwrap();
     // Adds the user information to the request as well
-    let mut json_values: Vec<Value> = Vec::new();
+    let mut json_values: Vec<FullRecipeDetails> = Vec::new();
     for recipe in recipes.iter() {
         let user = User::get_by_id(&pool, recipe.user_id).await;
         let Ok(user) = user else {
@@ -54,19 +59,51 @@ pub async fn get_all_recipes(
             continue;
         };
 
-        let json = json!({
-            "id": recipe.id,
-            "title": recipe.title,
-            "description": recipe.description,
-            "date_created": recipe.date_created,
-            "poster": {
-                "uid": user.uid,
-                "username": user.username
-            }
-        });
-
-        json_values.push(json);
+        let recipe = FullRecipeDetails::new(recipe.clone(), user);
+        json_values.push(recipe);
     }
 
     HttpResponse::Ok().json(json_values)
+}
+
+#[get("/{id}")]
+pub async fn get_recipe_by_id(pool: Data<Pool<Postgres>>, path: Path<i32>) -> impl Responder {
+    let id = path.into_inner();
+    let recipe = Recipe::get_by_id(&pool, id).await;
+
+    if let Err(e) = recipe {
+        pretty_error!("Failed to get recipe".to_string(), e.to_string(), error);
+
+        return HttpResponse::NotFound().json(error);
+    }
+
+    let Some(recipe) = recipe.unwrap() else {
+        pretty_error!(
+            "No recipe found".to_string(),
+            format!("Couldn't find recipe with the id: {}", id),
+            error
+        );
+
+        return HttpResponse::NotFound().json(error);
+    };
+
+    let user = User::get_by_id(&pool, recipe.user_id).await;
+    if let Err(e) = user {
+        pretty_error!("No recipe poster found".to_string(), e.to_string(), error);
+
+        return HttpResponse::NotFound().json(error);
+    };
+
+    let Some(user) = user.unwrap() else {
+        pretty_error!(
+            "No recipe poster found".to_string(),
+            format!("Couldn't find user with the id: {}", recipe.user_id),
+            error
+        );
+
+        return HttpResponse::NotFound().json(error);
+    };
+
+    let recipe = FullRecipeDetails::new(recipe, user);
+    HttpResponse::Ok().json(recipe)
 }

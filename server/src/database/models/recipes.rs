@@ -2,7 +2,7 @@ use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use sqlx::{prelude::FromRow, types::chrono, Pool, Postgres};
 
-#[derive(Serialize, Deserialize, Debug, FromRow)]
+#[derive(Serialize, Deserialize, Debug, FromRow, Clone)]
 pub struct Recipe {
     pub id: i32,
     pub user_id: i32,
@@ -20,5 +20,24 @@ impl Recipe {
             .await?;
 
         Ok(rows)
+    }
+
+    pub async fn get_by_id(pool: &Pool<Postgres>, id: i32) -> Result<Option<Recipe>, anyhow::Error> {
+        let row = sqlx::query_as::<_, Recipe>(r#"SELECT * FROM recipes WHERE id = $1"#)
+            .bind(id)
+            .fetch_one(pool)
+            .await;
+
+        if let Err(e) = row {
+            // If we dont find one, the query was still a success but we have no result
+            if let sqlx::Error::RowNotFound = e {
+                return Ok(None);
+            }
+
+            return Err(e).context(format!("Failed to find user with id: {}", id));
+        }
+
+
+        Ok(Some(row.unwrap()))
     }
 }
