@@ -209,6 +209,7 @@ pub async fn create_recipe(
         return HttpResponse::BadRequest().json(error);
     }
 
+    // Need to make sure we can actually get the auth details from extension
     let Some(auth) = auth else {
         pretty_error!(
             "Unauthorized".to_string(),
@@ -245,7 +246,6 @@ pub async fn create_recipe(
         .collect();
 
     let recipe_step = RecipeStep::insert(&pool, recipe_id, steps).await;
-
     if let Err(e) = recipe_step {
         pretty_error!(
             "Failed to insert recipe steps".to_string(),
@@ -253,7 +253,8 @@ pub async fn create_recipe(
             error
         );
 
-        // Doesnt need to panic, just attempt to delete
+        // Doesnt need to panic, just attempt to delete since we dont want the recipe to stay
+        // inserted if failed
         let _ = Recipe::delete(&pool, recipe_id).await;
         return HttpResponse::InternalServerError().json(error);
     }
