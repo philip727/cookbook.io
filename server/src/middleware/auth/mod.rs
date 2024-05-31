@@ -9,6 +9,12 @@ use jwt::VerifyWithKey;
 
 use crate::auth::helpers::verify_jwt_token;
 
+
+pub struct AuthExtension {
+    pub uid: String,
+    pub username: String,
+}
+
 pub struct AuthMiddleware;
 
 pub struct AuthMiddlewareService<S> {
@@ -72,8 +78,11 @@ where
 
         // Insert uid and username into the request extensions
         let (uid, username) = try_jwt.unwrap();
-        req.extensions_mut().insert(uid);
-        req.extensions_mut().insert(username);
+        let extension = AuthExtension {
+            uid,
+            username
+        };
+        req.extensions_mut().insert(extension);
 
         Either::Left(self.service.call(req))
     }
