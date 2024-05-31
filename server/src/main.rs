@@ -1,18 +1,22 @@
 use actix_web::{
-    web::{scope, Data},
+    web::{self, scope, to, Data},
     App, HttpServer,
 };
 use dotenv::dotenv;
+use middleware::auth::AuthMiddleware;
 use routes::{
-    recipes::services::{get_all_recipes, get_recipe_by_id, get_recipe_steps_from_recipe},
+    recipes::services::{
+        create_recipe, get_all_recipes, get_recipe_by_id, get_recipe_steps_from_recipe,
+    },
     users::services::{get_all_users, get_user_by_id, login_user, register_user},
 };
 use sqlx::postgres::PgPoolOptions;
 
 pub mod auth;
 pub mod database;
-pub mod routes;
 pub mod helpers;
+pub mod middleware;
+pub mod routes;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -36,9 +40,14 @@ async fn main() -> std::io::Result<()> {
                 )
                 .service(
                     scope("/recipes")
+                        .service(
+                            web::resource("/create")
+                                .wrap(AuthMiddleware)
+                                .route(web::post().to(create_recipe)),
+                        )
                         .service(get_all_recipes)
                         .service(get_recipe_by_id)
-                        .service(get_recipe_steps_from_recipe),
+                        .service(get_recipe_steps_from_recipe)
                 ),
         )
     })
