@@ -1,6 +1,6 @@
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
-use sqlx::{pool, prelude::FromRow, types::chrono, Pool, Postgres};
+use sqlx::{pool, prelude::FromRow, types::chrono, Pool, Postgres, Row};
 
 use crate::helpers::is_alnum_whitespace;
 
@@ -19,7 +19,7 @@ impl Recipe {
         title: String,
         description: String,
         user_id: i32,
-    ) -> Result<(), anyhow::Error> {
+    ) -> Result<i32, anyhow::Error> {
         if !is_alnum_whitespace(&title) {
             return Err(anyhow::Error::msg(format!(
                 "Failed to insert recipe step as the title isn't alphanumerical: {}",
@@ -37,13 +37,14 @@ impl Recipe {
         let rec = sqlx::query(
             r#"
             INSERT INTO recipes (title, description, user_id)
-            VALUES ( $1, $2, $3 )"#,
+            VALUES ( $1, $2, $3 ) RETURNING id"#,
         )
         .bind(title)
         .bind(description)
         .bind(user_id)
-        .fetch_all(pool)
+        .fetch_one(pool)
         .await;
+
 
         // Returns failed insert with message
         if let Err(e) = rec {
@@ -51,7 +52,15 @@ impl Recipe {
             return Err(e).context(format!("Failed to insert recipe: {}", err));
         }
 
-        Ok(())
+        let rec = rec.unwrap();
+        let id: i32 = rec.try_get("id").context("Failed to id")?;
+
+
+        Ok(id)
+    }
+
+    pub async fn exists(pool: &Pool<Postgres>, id: i32) -> bool {
+        Recipe::get_by_id(pool, id).await.unwrap_or(None).is_some()
     }
 
     pub async fn get_with_pagination(

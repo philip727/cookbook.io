@@ -41,3 +41,16 @@ pub struct RecipePoster {
     pub uid: i32,
     pub username: String,
 }
+
+#[derive(Deserialize)]
+pub struct CreateRecipePayload {
+    pub title: String,
+    pub description: String,
+    pub steps: Vec<RecipeStepPayload>
+}
+
+#[derive(Deserialize)]
+pub struct RecipeStepPayload {
+    pub order: i32,
+    pub description: String,
+}

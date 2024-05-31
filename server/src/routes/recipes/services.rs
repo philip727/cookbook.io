@@ -2,11 +2,13 @@ use crate::{
     database::models::{recipes::RecipeStep, user::User},
     routes::{
         error::PrettyErrorResponse,
-        recipes::helpers::{FullRecipeDetails, GetRecipeQueryParams},
+        recipes::helpers::{CreateRecipePayload, FullRecipeDetails, GetRecipeQueryParams},
     },
 };
 use actix_web::{
-    get, post, web::{self, Data, Path}, HttpResponse, Responder
+    get, post,
+    web::{self, Data, Path},
+    HttpRequest, HttpResponse, Responder,
 };
 use sqlx::{Pool, Postgres};
 
@@ -111,6 +113,17 @@ pub async fn get_recipe_steps_from_recipe(
     path: Path<i32>,
 ) -> impl Responder {
     let id = path.into_inner();
+    // No point in doing any more queries for something that doesnt exist
+    if !Recipe::exists(&pool, id).await {
+        pretty_error!(
+            "No recipe found".to_string(),
+            format!("No recipe exists with the id: {}", id),
+            error
+        );
+
+        return HttpResponse::NotFound().json(error);
+    }
+
     let recipe_steps = RecipeStep::get_recipe_steps(&pool, id).await;
 
     if let Err(e) = recipe_steps {
@@ -129,13 +142,23 @@ pub async fn get_recipe_steps_from_recipe(
         return HttpResponse::NotFound().json(error);
     };
 
+    if recipe_steps.is_empty() {
+        pretty_error!(
+            "No steps found".to_string(),
+            format!("Couldn't the steps for the recipe with the id: {}", id),
+            error
+        );
+
+        return HttpResponse::NotFound().json(error);
+    }
+
     HttpResponse::Ok().json(recipe_steps)
 }
 
-#[post("/create")]
-pub async fn create_recipe() -> impl Responder {
-
-
-
+// #[post(/create)]
+pub async fn create_recipe(
+    req: HttpRequest,
+    payload: web::Json<CreateRecipePayload>,
+) -> impl Responder {
     HttpResponse::Ok().body("")
 }
