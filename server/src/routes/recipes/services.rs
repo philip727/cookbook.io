@@ -1,14 +1,13 @@
 use crate::{
-    database::models::{recipes::RecipeStep, user::User},
-    routes::{
+    auth::helpers::{UIDString, UsernameString}, database::models::{recipes::RecipeStep, user::User}, helpers::is_alnum_whitespace, middleware::auth::AuthExtension, routes::{
         error::PrettyErrorResponse,
         recipes::helpers::{CreateRecipePayload, FullRecipeDetails, GetRecipeQueryParams},
-    },
+    }
 };
 use actix_web::{
     get, post,
     web::{self, Data, Path},
-    HttpRequest, HttpResponse, Responder,
+    HttpMessage, HttpRequest, HttpResponse, Responder,
 };
 use sqlx::{Pool, Postgres};
 
@@ -113,7 +112,6 @@ pub async fn get_recipe_steps_from_recipe(
     path: Path<i32>,
 ) -> impl Responder {
     let id = path.into_inner();
-    // No point in doing any more queries for something that doesnt exist
     if !Recipe::exists(&pool, id).await {
         pretty_error!(
             "No recipe found".to_string(),
@@ -159,6 +157,106 @@ pub async fn get_recipe_steps_from_recipe(
 pub async fn create_recipe(
     req: HttpRequest,
     payload: web::Json<CreateRecipePayload>,
+    pool: Data<Pool<Postgres>>,
 ) -> impl Responder {
+    let extensions = req.extensions();
+    let auth = extensions.get::<AuthExtension>();
+
+    // Ensures all details are passed
+    if !is_alnum_whitespace(&payload.title) {
+        pretty_error!(
+            "Invalid title".to_string(),
+            "The title to the recipe must be alphanumerical",
+            error
+        );
+
+        return HttpResponse::BadRequest().json(error);
+    }
+
+    if !is_alnum_whitespace(&payload.description) {
+        pretty_error!(
+            "Invalid description".to_string(),
+            "The description to the recipe must be alphanumerical",
+            error
+        );
+
+        return HttpResponse::BadRequest().json(error);
+    }
+
+    // ARG !
+    if payload.steps.is_empty() {
+        pretty_error!(
+            "No steps given".to_string(),
+            "You can't create a recipe with no steps",
+            error
+        );
+
+        return HttpResponse::BadRequest().json(error);
+    }
+
+    // Ensures no steps are empty
+    for step in payload.steps.iter() {
+        if !step.description.is_empty() {
+            continue;
+        };
+
+        pretty_error!(
+            "Invalid step".to_string(),
+            format!("Step {} has no valid instructions", step.order),
+            error
+        );
+
+        return HttpResponse::BadRequest().json(error);
+    }
+
+    let Some(auth) = auth else {
+        pretty_error!(
+            "Unauthorized".to_string(),
+            "Unable to get auth details from extension",
+            error
+        );
+        return HttpResponse::Unauthorized().json(error);
+    };
+
+    let Ok(uid) = auth.uid.parse::<i32>() else {
+        pretty_error!("Unauthorized".to_string(), "Invalid uid passed in auth", error);
+        return HttpResponse::InternalServerError().json(error);
+    };
+
+    let recipe_id = Recipe::insert(
+        &pool,
+        payload.title.clone(),
+        payload.description.clone(),
+        uid,
+    )
+    .await;
+
+    if let Err(e) = recipe_id {
+        pretty_error!("Failed to insert recipe".to_string(), e.to_string(), error);
+        // Doesnt need to panic, just attempt to delete
+        return HttpResponse::InternalServerError().json(error);
+    };
+
+    let recipe_id = recipe_id.unwrap();
+    let steps = payload
+        .steps
+        .iter()
+        .map(|step| (step.description.clone(), step.order))
+        .collect();
+
+    let recipe_step = RecipeStep::insert(&pool, recipe_id, steps).await;
+
+    if let Err(e) = recipe_step {
+        pretty_error!(
+            "Failed to insert recipe steps".to_string(),
+            e.to_string(),
+            error
+        );
+
+        // Doesnt need to panic, just attempt to delete
+        let _ = Recipe::delete(&pool, recipe_id).await;
+        return HttpResponse::InternalServerError().json(error);
+    }
+
     HttpResponse::Ok().body("")
 }

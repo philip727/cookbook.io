@@ -20,20 +20,6 @@ impl Recipe {
         description: String,
         user_id: i32,
     ) -> Result<i32, anyhow::Error> {
-        if !is_alnum_whitespace(&title) {
-            return Err(anyhow::Error::msg(format!(
-                "Failed to insert recipe step as the title isn't alphanumerical: {}",
-                &title
-            )));
-        }
-
-        if !is_alnum_whitespace(&description) {
-            return Err(anyhow::Error::msg(format!(
-                "Failed to insert recipe step as the description isn't alphanumerical: {}",
-                &description
-            )));
-        }
-
         let rec = sqlx::query(
             r#"
             INSERT INTO recipes (title, description, user_id)
@@ -45,7 +31,6 @@ impl Recipe {
         .fetch_one(pool)
         .await;
 
-
         // Returns failed insert with message
         if let Err(e) = rec {
             let err = e.to_string();
@@ -54,7 +39,6 @@ impl Recipe {
 
         let rec = rec.unwrap();
         let id: i32 = rec.try_get("id").context("Failed to id")?;
-
 
         Ok(id)
     }
@@ -98,6 +82,16 @@ impl Recipe {
 
         Ok(Some(row.unwrap()))
     }
+
+    pub async fn delete(pool: &Pool<Postgres>, id: i32) -> Result<(), anyhow::Error> {
+        let _ = sqlx::query(r#"DELETE FROM recipes WHERE id = $1"#)
+            .bind(id)
+            .execute(pool)
+            .await
+            .context("Failed to delete recipe")?;
+
+        Ok(())
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, FromRow, Clone)]
@@ -119,13 +113,6 @@ impl RecipeStep {
             let desc = &step.0;
             let order = step.1;
 
-            if !is_alnum_whitespace(desc) {
-                return Err(anyhow::Error::msg(format!(
-                    "Failed to insert recipe step as it isn't alphanumerical: {}",
-                    desc
-                )));
-            }
-
             let rec = sqlx::query(
                 r#"
                 INSERT INTO recipe_steps (recipe_id, description, step_order)
@@ -134,7 +121,7 @@ impl RecipeStep {
             .bind(recipe_id)
             .bind(desc)
             .bind(order)
-            .fetch_one(pool)
+            .execute(pool)
             .await;
 
             // Returns failed insert with message
@@ -168,5 +155,18 @@ impl RecipeStep {
         }
 
         Ok(Some(row.unwrap()))
+    }
+
+    pub async fn delete(
+        pool: &Pool<Postgres>,
+        recipe_id: i32,
+    ) -> Result<(), anyhow::Error> {
+        let _ = sqlx::query(r#"DELETE FROM recipe_steps WHERE recipe_id = $1"#)
+            .bind(recipe_id)
+            .execute(pool)
+            .await
+            .context("Failed to delete recipe steps")?;
+
+        Ok(())
     }
 }
