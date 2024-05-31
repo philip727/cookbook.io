@@ -2,6 +2,8 @@ use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use sqlx::{pool, prelude::FromRow, types::chrono, Pool, Postgres};
 
+use crate::helpers::is_alnum_whitespace;
+
 #[derive(Serialize, Deserialize, Debug, FromRow, Clone)]
 pub struct Recipe {
     pub id: i32,
@@ -12,6 +14,46 @@ pub struct Recipe {
 }
 
 impl Recipe {
+    pub async fn insert(
+        pool: &Pool<Postgres>,
+        title: String,
+        description: String,
+        user_id: i32,
+    ) -> Result<(), anyhow::Error> {
+        if !is_alnum_whitespace(&title) {
+            return Err(anyhow::Error::msg(format!(
+                "Failed to insert recipe step as the title isn't alphanumerical: {}",
+                &title
+            )));
+        }
+
+        if !is_alnum_whitespace(&description) {
+            return Err(anyhow::Error::msg(format!(
+                "Failed to insert recipe step as the description isn't alphanumerical: {}",
+                &description
+            )));
+        }
+
+        let rec = sqlx::query(
+            r#"
+            INSERT INTO recipes (title, description, user_id)
+            VALUES ( $1, $2, $3 )"#,
+        )
+        .bind(title)
+        .bind(description)
+        .bind(user_id)
+        .fetch_all(pool)
+        .await;
+
+        // Returns failed insert with message
+        if let Err(e) = rec {
+            let err = e.to_string();
+            return Err(e).context(format!("Failed to insert recipe: {}", err));
+        }
+
+        Ok(())
+    }
+
     pub async fn get_with_pagination(
         pool: &Pool<Postgres>,
         offset: u32,
@@ -42,7 +84,7 @@ impl Recipe {
                 return Ok(None);
             }
 
-            return Err(e).context(format!("Failed to find user with id: {}", id));
+            return Err(e).context(format!("Failed to find recipe with id: {}", id));
         }
 
         Ok(Some(row.unwrap()))
@@ -50,7 +92,7 @@ impl Recipe {
 }
 
 #[derive(Serialize, Deserialize, Debug, FromRow, Clone)]
-pub struct RecipeSteps {
+pub struct RecipeStep {
     pub id: i32,
     pub recipe_id: i32,
     pub description: String,
@@ -58,15 +100,52 @@ pub struct RecipeSteps {
     pub step_order: i32,
 }
 
-impl RecipeSteps {
+impl RecipeStep {
+    pub async fn insert(
+        pool: &Pool<Postgres>,
+        recipe_id: i32,
+        steps: Vec<(String, i32)>,
+    ) -> Result<(), anyhow::Error> {
+        for step in steps.iter() {
+            let desc = &step.0;
+            let order = step.1;
+
+            if !is_alnum_whitespace(desc) {
+                return Err(anyhow::Error::msg(format!(
+                    "Failed to insert recipe step as it isn't alphanumerical: {}",
+                    desc
+                )));
+            }
+
+            let rec = sqlx::query(
+                r#"
+                INSERT INTO recipe_steps (recipe_id, description, step_order)
+                VALUES ( $1, $2, $3 )"#,
+            )
+            .bind(recipe_id)
+            .bind(desc)
+            .bind(order)
+            .fetch_one(pool)
+            .await;
+
+            // Returns failed insert with message
+            if let Err(e) = rec {
+                let err = e.to_string();
+                return Err(e).context(format!("Failed to insert recipe step: {}", err));
+            }
+        }
+
+        Ok(())
+    }
+
     pub async fn get_recipe_steps(
         pool: &Pool<Postgres>,
-        id: i32,
-    ) -> Result<Option<Vec<RecipeSteps>>, anyhow::Error> {
-        let row = sqlx::query_as::<_, RecipeSteps>(
+        recipe_id: i32,
+    ) -> Result<Option<Vec<RecipeStep>>, anyhow::Error> {
+        let row = sqlx::query_as::<_, RecipeStep>(
             r#"SELECT * FROM recipe_steps WHERE recipe_id = $1 ORDER BY step_order"#,
         )
-        .bind(id)
+        .bind(recipe_id)
         .fetch_all(pool)
         .await;
 
@@ -76,7 +155,7 @@ impl RecipeSteps {
                 return Ok(None);
             }
 
-            return Err(e).context(format!("Failed to find user with id: {}", id));
+            return Err(e).context(format!("Failed to find recipe step with id: {}", recipe_id));
         }
 
         Ok(Some(row.unwrap()))

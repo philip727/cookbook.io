@@ -1,14 +1,12 @@
 use crate::{
-    database::models::{recipes::RecipeSteps, user::User},
+    database::models::{recipes::RecipeStep, user::User},
     routes::{
         error::PrettyErrorResponse,
         recipes::helpers::{FullRecipeDetails, GetRecipeQueryParams},
     },
 };
 use actix_web::{
-    get,
-    web::{self, Data, Path},
-    HttpResponse, Responder,
+    get, post, web::{self, Data, Path}, HttpResponse, Responder
 };
 use sqlx::{Pool, Postgres};
 
@@ -113,7 +111,7 @@ pub async fn get_recipe_steps_from_recipe(
     path: Path<i32>,
 ) -> impl Responder {
     let id = path.into_inner();
-    let recipe_steps = RecipeSteps::get_recipe_steps(&pool, id).await;
+    let recipe_steps = RecipeStep::get_recipe_steps(&pool, id).await;
 
     if let Err(e) = recipe_steps {
         pretty_error!("No recipe steps found".to_string(), e.to_string(), error);
@@ -132,4 +130,12 @@ pub async fn get_recipe_steps_from_recipe(
     };
 
     HttpResponse::Ok().json(recipe_steps)
+}
+
+#[post("/create")]
+pub async fn create_recipe() -> impl Responder {
+
+
+
+    HttpResponse::Ok().body("")
 }

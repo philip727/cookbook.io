@@ -37,7 +37,7 @@ impl User {
             return Err(e).context(format!("Failed to insert user: {}", err));
         }
 
-        // Returns the uid and username back to requester
+        // Returns the uid and username
         let rec = rec.unwrap();
         let uid: i32 = rec.try_get("uid").context("Failed to get uid")?;
         let username: String = rec.try_get("username").context("Failed to get username")?;

@@ -1,6 +1,10 @@
 use serde::{Deserialize, Serialize};
+use sqlx::prelude::FromRow;
 
-use crate::database::models::{recipes::Recipe, user::User};
+use crate::database::models::{
+    recipes::{Recipe, RecipeStep},
+    user::User,
+};
 
 #[derive(Deserialize, Clone, Copy)]
 pub struct GetRecipeQueryParams {
