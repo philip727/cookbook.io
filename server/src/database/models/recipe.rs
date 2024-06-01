@@ -27,6 +27,16 @@ impl Recipe {
         Ok(rows)
     }
 
+    pub async fn get_by_id(pool: &Pool<Postgres>, recipe_id: i32) -> Result<Recipe, anyhow::Error> {
+        let recipe =
+            sqlx::query_as::<_, Recipe>(r#"SELECT * FROM recipes WHERE id = $1"#)
+                .bind(recipe_id)
+                .fetch_one(pool)
+                .await?;
+
+        Ok(recipe)
+    }
+
     pub async fn insert(
         pool: &Pool<Postgres>,
         file_path: String,

@@ -13,7 +13,7 @@ use crate::{
 };
 use actix_web::{
     get,
-    web::{self, Data},
+    web::{self, Data, Json},
     HttpMessage, HttpRequest, HttpResponse, Responder,
 };
 use serde_json::json;
@@ -64,9 +64,9 @@ pub async fn get_recipes(
             continue;
         };
 
+        // Read recipe json
         let file_path = RECIPE_DIR.to_string() + recipe.recipe_file_path.as_str();
-        let mut file = File::open(file_path);
-
+        let file = File::open(file_path);
         if let Err(e) = file {
             pretty_error!(
                 "Recipe file doesn't exist".to_string(),
@@ -79,8 +79,8 @@ pub async fn get_recipes(
         let mut file = file.unwrap();
         let mut data = String::new();
         file.read_to_string(&mut data).unwrap();
-
         let recipe_json = serde_json::from_str::<RecipeFileJson>(&data);
+
         if let Err(e) = recipe_json {
             pretty_error!("Recipe file is invalid".to_string(), e.to_string(), error);
 
@@ -88,6 +88,7 @@ pub async fn get_recipes(
         }
         let recipe_json = recipe_json.unwrap();
 
+        // Push value to vec
         let value = json!({
             "poster": {
                 "uid": user.uid,
@@ -104,6 +105,53 @@ pub async fn get_recipes(
     }
 
     HttpResponse::Ok().json(json_values)
+}
+
+#[get("/{id}")]
+pub async fn get_recipe(
+    pool: Data<Pool<Postgres>>,
+    path: actix_web::web::Path<i32>,
+) -> impl Responder {
+    let id = path.into_inner();
+
+    let recipe = Recipe::get_by_id(&pool, id).await;
+
+    if let Err(e) = recipe {
+        pretty_error!(
+            format!("Failed to get recipe with id: {}", id),
+            e.to_string(),
+            error
+        );
+
+        return HttpResponse::NotFound().json(error);
+    };
+    let recipe = recipe.unwrap();
+
+    let file_path = RECIPE_DIR.to_string() + recipe.recipe_file_path.as_str();
+    let file = File::open(file_path);
+    if let Err(e) = file {
+        pretty_error!(
+            "Recipe file doesn't exist".to_string(),
+            e.to_string(),
+            error
+        );
+
+        return HttpResponse::InternalServerError().json(error);
+    }
+
+    let mut file = file.unwrap();
+    let mut data = String::new();
+    file.read_to_string(&mut data).unwrap();
+    let recipe_json = serde_json::from_str::<RecipeFileJson>(&data);
+
+    if let Err(e) = recipe_json {
+        pretty_error!("Recipe file is invalid".to_string(), e.to_string(), error);
+
+        return HttpResponse::InternalServerError().json(error);
+    }
+    let recipe_json = recipe_json.unwrap();
+
+    HttpResponse::Ok().json(recipe_json)
 }
 
 // #[post(/create)]
