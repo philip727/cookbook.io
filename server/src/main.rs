@@ -5,7 +5,7 @@ use actix_web::{
 use dotenv::dotenv;
 use middleware::auth::AuthMiddleware;
 use routes::{
-    recipes::services::create_recipe,
+    recipes::services::{create_recipe, get_recipes},
     users::services::{get_all_users, get_user_by_id, login_user, register_user},
 };
 use sqlx::postgres::PgPoolOptions;
@@ -38,11 +38,13 @@ async fn main() -> std::io::Result<()> {
                         .service(login_user),
                 )
                 .service(
-                    scope("/recipes").service(
-                        web::resource("/create")
-                            .wrap(AuthMiddleware)
-                            .route(web::post().to(create_recipe)),
-                    ),
+                    scope("/recipes")
+                        .service(
+                            web::resource("/create")
+                                .wrap(AuthMiddleware)
+                                .route(web::post().to(create_recipe)),
+                        )
+                        .service(get_recipes),
                 ),
         )
     })

@@ -1,20 +1,110 @@
 use std::{
     fs::{self, File},
-    io::{BufWriter, Write},
+    io::{BufWriter, Read, Write},
     path::Path,
 };
 
 use crate::{
-    database::models::recipe::Recipe, middleware::auth::AuthExtension, pretty_error, recipe_io::RecipeFileJson, routes::error::PrettyErrorResponse
+    database::models::{recipe::Recipe, user::User},
+    middleware::auth::AuthExtension,
+    pretty_error,
+    recipe_io::RecipeFileJson,
+    routes::error::PrettyErrorResponse,
 };
 use actix_web::{
+    get,
     web::{self, Data},
     HttpMessage, HttpRequest, HttpResponse, Responder,
 };
+use serde_json::json;
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
-use super::constants::RECIPE_DIR;
+use super::{constants::RECIPE_DIR, helpers::GetRecipeQueryParams};
+
+#[get("/all")]
+pub async fn get_recipes(
+    pool: Data<Pool<Postgres>>,
+    mut pagination: web::Query<GetRecipeQueryParams>,
+) -> impl Responder {
+    pagination.limit = match pagination.limit {
+        Some(limit) => {
+            if limit > 10 {
+                Some(10)
+            } else {
+                Some(limit)
+            }
+        }
+        None => Some(10),
+    };
+
+    if let None = pagination.offset {
+        pagination.offset = Some(0);
+    }
+
+    let recipes =
+        Recipe::get_paginated(&pool, pagination.offset.unwrap(), pagination.limit.unwrap()).await;
+
+    if let Err(e) = recipes {
+        pretty_error!("Failed to get recipes".to_string(), e.to_string(), error);
+
+        return HttpResponse::NotFound().json(error);
+    };
+    let recipes = recipes.unwrap();
+
+    let mut json_values: Vec<serde_json::Value> = Vec::new();
+    for recipe in recipes.iter() {
+        let user = User::get_by_id(&pool, recipe.user_id).await;
+
+        let Ok(user) = user else {
+            continue;
+        };
+
+        let Some(user) = user else {
+            continue;
+        };
+
+        let file_path = RECIPE_DIR.to_string() + recipe.recipe_file_path.as_str();
+        let mut file = File::open(file_path);
+
+        if let Err(e) = file {
+            pretty_error!(
+                "Recipe file doesn't exist".to_string(),
+                e.to_string(),
+                error
+            );
+
+            return HttpResponse::InternalServerError().json(error);
+        }
+        let mut file = file.unwrap();
+        let mut data = String::new();
+        file.read_to_string(&mut data).unwrap();
+
+        let recipe_json = serde_json::from_str::<RecipeFileJson>(&data);
+        if let Err(e) = recipe_json {
+            pretty_error!("Recipe file is invalid".to_string(), e.to_string(), error);
+
+            return HttpResponse::InternalServerError().json(error);
+        }
+        let recipe_json = recipe_json.unwrap();
+
+        let value = json!({
+            "poster": {
+                "uid": user.uid,
+                "username": user.username
+            },
+            "recipe": {
+                "id": recipe.id,
+                "title": recipe_json.title,
+                "description": recipe_json.description
+            }
+        });
+
+        json_values.push(value);
+    }
+
+    HttpResponse::Ok().json(json_values)
+}
 
 // #[post(/create)]
 pub async fn create_recipe(
@@ -89,12 +179,14 @@ pub async fn create_recipe(
     }
 
     if let Err(e) = Recipe::insert(&pool, file_name, uid).await {
-        pretty_error!("Failed to insert recipe data into database", e.to_string(), error);
+        pretty_error!(
+            "Failed to insert recipe data into database",
+            e.to_string(),
+            error
+        );
 
         return HttpResponse::InternalServerError().json(error);
     }
 
     HttpResponse::Ok().body("Succesfully created recipe")
 }
-
-pub async fn get_ingredients() {}
