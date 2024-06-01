@@ -1,9 +1,3 @@
-create sequence measurements_id_seq
-create sequence measurements_id_seq
-    as integer;
-
-create type measurement as enum ('mL', 'L', 'tsp', 'tbsp', 'fl oz', 'pint', 'gallon', 'mg', 'g', 'kg', 'pound', 'ounce', 'celsius', 'fahrenheit');
-
 create table users
 (
     uid      serial,
@@ -17,43 +11,12 @@ create table users
 
 create table recipes
 (
-    id           serial,
-    title        varchar(30)                                        not null,
-    description  varchar(100)                                       not null,
-    user_id      integer                                            not null,
-    date_created timestamp with time zone default CURRENT_TIMESTAMP not null,
+    id               serial,
+    recipe_file_path varchar(255)                                       not null,
+    user_id          integer                                            not null,
+    date_created     timestamp with time zone default CURRENT_TIMESTAMP not null,
     primary key (id),
     constraint fk_user
         foreign key (user_id) references users
             on delete cascade
 );
-
-create table recipe_steps
-(
-    id          serial,
-    recipe_id   integer      not null,
-    description varchar(255) not null,
-    step_order  integer      not null,
-    primary key (id),
-    constraint unique_recipe_step_order
-        unique (recipe_id, step_order),
-    constraint fk_recipe
-        foreign key (recipe_id) references recipes
-            on delete cascade
-);
-
-create table ingredients
-(
-    id        integer default nextval('measurements_id_seq'::regclass) not null,
-    name      measurement                                              not null,
-    amount    integer                                                  not null,
-    recipe_id integer                                                  not null,
-    constraint measurements_pkey
-        primary key (id),
-    constraint fk_recipe
-        foreign key (recipe_id) references recipes
-            on delete cascade
-);
-
-alter sequence measurements_id_seq owned by ingredients.id;
-
