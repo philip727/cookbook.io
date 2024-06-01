@@ -1,4 +1,5 @@
 create sequence measurements_id_seq
+create sequence measurements_id_seq
     as integer;
 
 create type measurement as enum ('mL', 'L', 'tsp', 'tbsp', 'fl oz', 'pint', 'gallon', 'mg', 'g', 'kg', 'pound', 'ounce', 'celsius', 'fahrenheit');
@@ -43,7 +44,7 @@ create table recipe_steps
 
 create table ingredients
 (
-    id        serial,
+    id        integer default nextval('measurements_id_seq'::regclass) not null,
     name      measurement                                              not null,
     amount    integer                                                  not null,
     recipe_id integer                                                  not null,
@@ -53,3 +54,6 @@ create table ingredients
         foreign key (recipe_id) references recipes
             on delete cascade
 );
+
+alter sequence measurements_id_seq owned by ingredients.id;
+
