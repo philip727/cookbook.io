@@ -2,8 +2,6 @@ use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use sqlx::{pool, prelude::FromRow, types::chrono, Pool, Postgres, Row};
 
-use crate::helpers::is_alnum_whitespace;
-
 #[derive(Serialize, Deserialize, Debug, FromRow, Clone)]
 pub struct Recipe {
     pub id: i32,
@@ -29,15 +27,8 @@ impl Recipe {
         .bind(description)
         .bind(user_id)
         .fetch_one(pool)
-        .await;
+        .await?;
 
-        // Returns failed insert with message
-        if let Err(e) = rec {
-            let err = e.to_string();
-            return Err(e).context(format!("Failed to insert recipe: {}", err));
-        }
-
-        let rec = rec.unwrap();
         let id: i32 = rec.try_get("id").context("Failed to id")?;
 
         Ok(id)
@@ -87,8 +78,7 @@ impl Recipe {
         let _ = sqlx::query(r#"DELETE FROM recipes WHERE id = $1"#)
             .bind(id)
             .execute(pool)
-            .await
-            .context("Failed to delete recipe")?;
+            .await?;
 
         Ok(())
     }
@@ -107,29 +97,19 @@ impl RecipeStep {
     pub async fn insert(
         pool: &Pool<Postgres>,
         recipe_id: i32,
-        steps: Vec<(String, i32)>,
+        description: String,
+        order: i32,
     ) -> Result<(), anyhow::Error> {
-        for step in steps.iter() {
-            let desc = &step.0;
-            let order = step.1;
-
-            let rec = sqlx::query(
-                r#"
+        let _ = sqlx::query(
+            r#"
                 INSERT INTO recipe_steps (recipe_id, description, step_order)
                 VALUES ( $1, $2, $3 )"#,
-            )
-            .bind(recipe_id)
-            .bind(desc)
-            .bind(order)
-            .execute(pool)
-            .await;
-
-            // Returns failed insert with message
-            if let Err(e) = rec {
-                let err = e.to_string();
-                return Err(e).context(format!("Failed to insert recipe step: {}", err));
-            }
-        }
+        )
+        .bind(recipe_id)
+        .bind(description)
+        .bind(order)
+        .execute(pool)
+        .await?;
 
         Ok(())
     }
@@ -157,10 +137,7 @@ impl RecipeStep {
         Ok(Some(row.unwrap()))
     }
 
-    pub async fn delete(
-        pool: &Pool<Postgres>,
-        recipe_id: i32,
-    ) -> Result<(), anyhow::Error> {
+    pub async fn delete(pool: &Pool<Postgres>, recipe_id: i32) -> Result<(), anyhow::Error> {
         let _ = sqlx::query(r#"DELETE FROM recipe_steps WHERE recipe_id = $1"#)
             .bind(recipe_id)
             .execute(pool)

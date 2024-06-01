@@ -2,8 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 
 use crate::database::models::{
-    recipes::{Recipe, RecipeStep},
-    user::User,
+    ingredients::Ingredient, recipes::{Recipe, RecipeStep}, user::User
 };
 
 #[derive(Deserialize, Clone, Copy)]
@@ -46,7 +45,14 @@ pub struct RecipePoster {
 pub struct CreateRecipePayload {
     pub title: String,
     pub description: String,
-    pub steps: Vec<RecipeStepPayload>
+    pub steps: Vec<RecipeStepPayload>,
+    pub ingredients: Vec<IngredientPayload>
+}
+
+#[derive(Deserialize)]
+pub struct IngredientPayload {
+    pub name: String,
+    pub amount: i16,
 }
 
 #[derive(Deserialize)]

@@ -1,8 +1,12 @@
 use crate::{
-    auth::helpers::{UIDString, UsernameString}, database::models::{recipes::RecipeStep, user::User}, helpers::is_alnum_whitespace, middleware::auth::AuthExtension, routes::{
+    auth::helpers::{UIDString, UsernameString},
+    database::models::{ingredients::Ingredient, recipes::RecipeStep, user::User},
+    helpers::is_alnum_whitespace,
+    middleware::auth::AuthExtension,
+    routes::{
         error::PrettyErrorResponse,
         recipes::helpers::{CreateRecipePayload, FullRecipeDetails, GetRecipeQueryParams},
-    }
+    },
 };
 use actix_web::{
     get, post,
@@ -220,7 +224,11 @@ pub async fn create_recipe(
     };
 
     let Ok(uid) = auth.uid.parse::<i32>() else {
-        pretty_error!("Unauthorized".to_string(), "Invalid uid passed in auth", error);
+        pretty_error!(
+            "Unauthorized".to_string(),
+            "Invalid uid passed in auth",
+            error
+        );
         return HttpResponse::InternalServerError().json(error);
     };
 
@@ -239,25 +247,48 @@ pub async fn create_recipe(
     };
 
     let recipe_id = recipe_id.unwrap();
-    let steps = payload
-        .steps
-        .iter()
-        .map(|step| (step.description.clone(), step.order))
-        .collect();
+    let steps = &payload.steps;
 
-    let recipe_step = RecipeStep::insert(&pool, recipe_id, steps).await;
-    if let Err(e) = recipe_step {
-        pretty_error!(
-            "Failed to insert recipe steps".to_string(),
-            e.to_string(),
-            error
-        );
+    // Iterate over each step and attempt to insert
+    for step in steps.iter() {
+        let recipe_step =
+            RecipeStep::insert(&pool, recipe_id, step.description.clone(), step.order).await;
+        if let Err(e) = recipe_step {
+            pretty_error!(
+                "Failed to insert recipe steps".to_string(),
+                e.to_string(),
+                error
+            );
 
-        // Doesnt need to panic, just attempt to delete since we dont want the recipe to stay
-        // inserted if failed
-        let _ = Recipe::delete(&pool, recipe_id).await;
-        return HttpResponse::InternalServerError().json(error);
+            // Doesnt need to panic, just attempt to delete since we dont want the recipe to stay
+            // inserted if failed
+            // -> Should delete ingredients as well due to on delete cascade
+            let _ = Recipe::delete(&pool, recipe_id).await;
+            return HttpResponse::InternalServerError().json(error);
+        }
     }
 
-    HttpResponse::Ok().body("")
+    let ingredients = &payload.ingredients;
+    for ingredient in ingredients.iter() {
+        let ingredient =
+            Ingredient::insert(&pool, ingredient.name.clone(), ingredient.amount, recipe_id).await;
+
+        if let Err(e) = ingredient {
+            pretty_error!(
+                "Failed to insert measurement".to_string(),
+                e.to_string(),
+                error
+            );
+
+            // Doesnt need to panic, just attempt to delete since we dont want the recipe to stay
+            // inserted if failed
+            // -> Should delete ingredients as well due to on delete cascade
+            let _ = Recipe::delete(&pool, recipe_id).await;
+            return HttpResponse::InternalServerError().json(error);
+        }
+    }
+
+    HttpResponse::Ok().body("Succesfully created recipe")
 }
+
+pub async fn get_ingredients() {}

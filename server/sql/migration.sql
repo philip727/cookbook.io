@@ -1,3 +1,8 @@
+create sequence measurements_id_seq
+    as integer;
+
+create type measurement as enum ('mL', 'L', 'tsp', 'tbsp', 'fl oz', 'pint', 'gallon', 'mg', 'g', 'kg', 'pound', 'ounce', 'celsius', 'fahrenheit');
+
 create table users
 (
     uid      serial,
@@ -31,6 +36,19 @@ create table recipe_steps
     primary key (id),
     constraint unique_recipe_step_order
         unique (recipe_id, step_order),
+    constraint fk_recipe
+        foreign key (recipe_id) references recipes
+            on delete cascade
+);
+
+create table ingredients
+(
+    id        serial,
+    name      measurement                                              not null,
+    amount    integer                                                  not null,
+    recipe_id integer                                                  not null,
+    constraint measurements_pkey
+        primary key (id),
     constraint fk_recipe
         foreign key (recipe_id) references recipes
             on delete cascade
