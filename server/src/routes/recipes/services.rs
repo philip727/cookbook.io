@@ -115,7 +115,6 @@ pub async fn get_recipe(
     let id = path.into_inner();
 
     let recipe = Recipe::get_by_id(&pool, id).await;
-
     if let Err(e) = recipe {
         pretty_error!(
             format!("Failed to get recipe with id: {}", id),

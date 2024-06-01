@@ -16,6 +16,7 @@ pub mod helpers;
 pub mod middleware;
 pub mod recipe_io;
 pub mod routes;
+pub mod static_files;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -30,6 +31,8 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new().app_data(Data::new(pool.clone())).service(
             scope("/v1")
+                .service(actix_files::Files::new("/thumbnails", "./thumbnails"))
+                .service(actix_files::Files::new("/pfp", "./profile_pictures"))
                 .service(
                     scope("/users")
                         .service(get_all_users)
