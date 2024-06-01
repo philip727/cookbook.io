@@ -242,5 +242,4 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/rust,dotenv,macos,linux,windows,node,svelte
 
-
-*.recipes/
+**/recipes
