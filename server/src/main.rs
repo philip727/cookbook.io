@@ -1,3 +1,4 @@
+use actix_cors::Cors;
 use actix_web::{
     web::{self, scope, to, Data},
     App, HttpServer,
@@ -29,28 +30,37 @@ async fn main() -> std::io::Result<()> {
         .expect("Couldnt conect to postgres db");
 
     HttpServer::new(move || {
-        App::new().app_data(Data::new(pool.clone())).service(
-            scope("/v1")
-                .service(actix_files::Files::new("/thumbnails", "./thumbnails"))
-                .service(actix_files::Files::new("/pfp", "./profile_pictures"))
-                .service(
-                    scope("/users")
-                        .service(get_all_users)
-                        .service(get_user_by_id)
-                        .service(register_user)
-                        .service(login_user),
-                )
-                .service(
-                    scope("/recipes")
-                        .service(
-                            web::resource("/create")
-                                .wrap(AuthMiddleware)
-                                .route(web::post().to(create_recipe)),
-                        )
-                        .service(get_recipes)
-                        .service(get_recipe),
-                ),
-        )
+        let cors = Cors::default()
+            .allow_any_origin()
+            .allowed_methods(vec!["GET", "POST"])
+            .allow_any_header()
+            .max_age(3600);
+
+        App::new()
+            .app_data(Data::new(pool.clone()))
+            .wrap(cors)
+            .service(
+                scope("/v1")
+                    .service(actix_files::Files::new("/thumbnails", "./thumbnails"))
+                    .service(actix_files::Files::new("/pfp", "./profile_pictures"))
+                    .service(
+                        scope("/users")
+                            .service(get_all_users)
+                            .service(get_user_by_id)
+                            .service(register_user)
+                            .service(login_user),
+                    )
+                    .service(
+                        scope("/recipes")
+                            .service(
+                                web::resource("/create")
+                                    .wrap(AuthMiddleware)
+                                    .route(web::post().to(create_recipe)),
+                            )
+                            .service(get_recipes)
+                            .service(get_recipe),
+                    ),
+            )
     })
     .bind(("127.0.0.1", 8080))?
     .run()
