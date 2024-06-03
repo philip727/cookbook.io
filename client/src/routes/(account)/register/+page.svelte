@@ -1,37 +1,54 @@
 <script lang="ts">
-    import ErrorBox from "../../../components/ErrorBox.svelte";
+    import { redirect } from "@sveltejs/kit";
+    import ErrorBox, { type Error } from "../../../components/ErrorBox.svelte";
     import HiddenSinglelineInput from "../../../components/HiddenSinglelineInput.svelte";
+    import SuccessBox from "../../../components/SuccessBox.svelte";
+    import type { Success } from "../../../components/SuccessBox.svelte";
     import TextSinglelineInput from "../../../components/TextSinglelineInput.svelte";
     import Title from "../../../components/Title.svelte";
+    import { goto } from "$app/navigation";
 
+    let registerError: Error | null = null;
+    let registerSucess: Success | null = null;
     let formData = {
         username: "",
         email: "",
         password: "",
         confirm_password: "",
     };
-    let registerError = { has: false, error: { error: "", description: "" } };
 
     async function handleSubmit(
         event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement },
     ) {
         event.preventDefault();
 
-        try {
-            let response = await window.fetch(
-                "http://127.0.0.1:8080/v1/users/register",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Access-Control-Allow-Origin": "*",
-                    },
-                    body: JSON.stringify(formData),
+        let response = await window.fetch(
+            "http://127.0.0.1:8080/v1/users/register",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
                 },
-            );
-        } catch (error) {
-            console.log(error);
+                body: JSON.stringify(formData),
+            },
+        );
+
+        const data = await response.json();
+        if (!response.ok) {
+            registerError = {
+                error: data.error,
+                description: data.description,
+            };
+            return;
         }
+
+        registerSucess = {
+            title: "Welcome",
+            description: "Thank you for registering with us!",
+        };
+
+        await goto("/login");
     }
 </script>
 
@@ -39,8 +56,19 @@
     <Title textClass="text-4xl" />
     <form on:submit={handleSubmit} class="w-80 h-fit shadow-one mt-4 px-4 py-3">
         <h1 class="text-3xl font-bold">Register</h1>
-        {#if registerError.has}
-            <ErrorBox extraClass="mt-6" error="Hay" description="NOOO" />
+        {#if registerError != null && registerSucess == null}
+            <ErrorBox
+                extraClass="mt-6"
+                error={registerError.error}
+                description={registerError.description}
+            />
+        {/if}
+        {#if registerSucess != null}
+            <SuccessBox
+                extraClass="mt-6"
+                title="Welcome"
+                description="Thank you for registering with us!"
+            />
         {/if}
         <TextSinglelineInput
             name="username"

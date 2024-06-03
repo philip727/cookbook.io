@@ -110,7 +110,7 @@ pub async fn register_user(
     if !User::is_password_valid(&payload.password) {
         pretty_error!(
             "Invalid password".to_string(),
-            "Your password is not strong enough. It must be at least 8 characters long, contain a combination of uppercase and lowercase letters, at least one digit and at least one special character".to_string(),
+            "Your password must contain at least 8 characters, a combination of uppercase and lowercase characters, at least one digit and at least one special character".to_string(),
             error
         );
 
@@ -121,7 +121,7 @@ pub async fn register_user(
     if payload.password != payload.confirm_password {
         pretty_error!(
             "Passwords do not match".to_string(),
-            "Make sure your passwords match".to_string(),
+            "Your passwords do match, please enter a new password".to_string(),
             error
         );
 
