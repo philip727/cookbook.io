@@ -12,6 +12,7 @@ use sqlx::{Pool, Postgres};
 use crate::{
     auth::helpers::get_signed_jwt_token,
     database::models::user::User,
+    helpers::is_alnum_whitespace,
     pretty_error,
     routes::{
         error::PrettyErrorResponse,
@@ -151,15 +152,21 @@ pub async fn login_user(
     payload: web::Json<LoginPayload>,
     pool: Data<Pool<Postgres>>,
 ) -> impl Responder {
-    let mut identifier: Option<LoginIdentifier> = None;
-    // If we have a username set as identifier
-    if let Some(username) = &payload.username {
-        identifier = Some(LoginIdentifier::Username(username.to_string()));
-    }
+    let identifier: Option<LoginIdentifier>;
+    if User::email_is_valid(&payload.identifier) {
+        identifier = Some(LoginIdentifier::Email(payload.identifier.to_string()));
+    } else {
+        if !is_alnum_whitespace(&payload.identifier) {
+            pretty_error!(
+                "The identifier is invalid".to_string(),
+                format!("Please provide a username(only alphanumerical) or email"),
+                error
+            );
 
-    // If we have an email and the identifier is still none then we use email
-    if let (None, Some(email)) = (&identifier, &payload.email) {
-        identifier = Some(LoginIdentifier::Email(email.to_string()));
+            return HttpResponse::BadRequest().json(error);
+        }
+
+        identifier = Some(LoginIdentifier::Username(payload.identifier.to_string()));
     }
 
     // If no identifier was provided then we must return
@@ -231,5 +238,9 @@ pub async fn login_user(
     claims.insert("username".to_string(), user.username);
     let jwt_token = get_signed_jwt_token(claims);
 
-    HttpResponse::Ok().body(jwt_token.as_str().to_string())
+    let jwt_payload = json!({
+        "jwt": jwt_token.as_str().to_string(),
+    });
+
+    HttpResponse::Ok().json(jwt_payload)
 }

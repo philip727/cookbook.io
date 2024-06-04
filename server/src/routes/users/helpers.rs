@@ -12,8 +12,7 @@ pub struct RegisterPayload {
 
 #[derive(Deserialize)]
 pub struct LoginPayload {
-    pub username: Option<String>,
-    pub email: Option<String>,
+    pub identifier: String,
     pub password: String,
 }
 
