@@ -1,23 +1,71 @@
-<script>
+<script lang="ts">
     import { redirect } from "@sveltejs/kit";
     import TextSinglelineInput from "../../../components/TextSinglelineInput.svelte";
     import Title from "../../../components/Title.svelte";
+    import HiddenSinglelineInput from "../../../components/HiddenSinglelineInput.svelte";
+    import type { Error } from "../../../components/ErrorBox.svelte";
+    import ErrorBox from "../../../components/ErrorBox.svelte";
+
+    let loginError: Error | null = null;
+    let formData = {
+        identifier: "",
+        password: "",
+    };
+
+    async function handleSubmit(
+        event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement },
+    ) {
+        event.preventDefault();
+
+        let response = await window.fetch(
+            "http://127.0.0.1:8080/v1/users/login",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                },
+                body: JSON.stringify(formData),
+            },
+        );
+
+        const data = await response.json();
+        if (!response.ok) {
+            loginError = {
+                error: data.error,
+                description: data.description,
+            };
+            return;
+        }
+    }
 </script>
 
 <div class="flex flex-col justify-center items-center w-full h-screen">
     <Title textClass="text-4xl" />
-    <form method="POST" class="w-80 h-fit shadow-one mt-4 px-4 py-3">
+    <form
+        on:submit={handleSubmit}
+        method="POST"
+        class="w-80 h-fit shadow-one mt-4 px-4 py-3"
+    >
         <h1 class="text-3xl font-bold">Login</h1>
+        {#if loginError != null}
+            <ErrorBox
+                extraClass="mt-6"
+                error={loginError.error}
+                description={loginError.description}
+            />
+        {/if}
         <TextSinglelineInput
             name="identifier"
             placeholder="Email or username"
             extraClass="mt-4"
+            bind:value={formData.identifier}
         />
-        <TextSinglelineInput
+        <HiddenSinglelineInput
             name="password"
             placeholder="Password"
-            type="password"
             extraClass="mt-6"
+            bind:value={formData.password}
         />
         <div class="mt-1">
             <a
