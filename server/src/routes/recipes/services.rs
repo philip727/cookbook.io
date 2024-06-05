@@ -178,8 +178,10 @@ pub async fn create_recipe(
             "Invalid uid passed in auth",
             error
         );
+
         return HttpResponse::InternalServerError().json(error);
     };
+
     if let Err(e) = payload.is_valid_recipe() {
         pretty_error!("Invalid recipe format", e.to_string(), error);
 
