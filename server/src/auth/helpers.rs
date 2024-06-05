@@ -4,7 +4,6 @@ use std::{
 };
 
 use anyhow::Context;
-use futures::future::ok;
 use hmac::{digest::KeyInit, Hmac};
 use jwt::{SignWithKey, Token, VerifyWithKey};
 use sha2::Sha512;
@@ -19,7 +18,11 @@ pub fn verify_jwt_token(token_str: &str) -> Result<(UIDString, UsernameString), 
         .verify_with_key(&key)
         .context("Failed to verify key")?;
 
-    // verify exp and iat
+    let current_time = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Time has gone backwards")
+        .as_secs();
+
     let uid = claims
         .get("uid")
         .ok_or(anyhow::Error::msg("No uid claim in jwt"))?;
@@ -27,6 +30,20 @@ pub fn verify_jwt_token(token_str: &str) -> Result<(UIDString, UsernameString), 
     let username = claims
         .get("username")
         .ok_or(anyhow::Error::msg("No username claim in jwt"))?;
+
+    // verify exp and iat
+    let exp = claims
+        .get("exp")
+        .ok_or(anyhow::Error::msg("No exp claim in jwt"))?
+        .parse::<u64>()?;
+
+    let _ = claims
+        .get("iat")
+        .ok_or(anyhow::Error::msg("No iat claim in jwt"))?;
+
+    if current_time > exp {
+        return Err(anyhow::Error::msg("JWT is expired"));
+    }
 
     Ok((uid.to_string(), username.to_string()))
 }

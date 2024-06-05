@@ -5,6 +5,8 @@
     import HiddenSinglelineInput from "../../../components/HiddenSinglelineInput.svelte";
     import type { Error } from "../../../components/ErrorBox.svelte";
     import ErrorBox from "../../../components/ErrorBox.svelte";
+    import { storeJWT } from "$lib/login";
+    import { goto } from "$app/navigation";
 
     let loginError: Error | null = null;
     let formData = {
@@ -37,6 +39,9 @@
             };
             return;
         }
+
+        storeJWT(data.jwt);
+        await goto("/");
     }
 </script>
 
