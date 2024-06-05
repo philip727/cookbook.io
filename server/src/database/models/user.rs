@@ -65,6 +65,10 @@ impl User {
         Ok(values)
     }
 
+    pub async fn exists(pool: &Pool<Postgres>, id: i32) -> Result<bool, anyhow::Error> {
+        Ok(Self::get_by_id(pool, id).await?.is_some())
+    }
+
     pub async fn get_by_id(pool: &Pool<Postgres>, id: i32) -> Result<Option<User>, anyhow::Error> {
         let row = sqlx::query_as::<_, User>(r#"SELECT * FROM users WHERE uid = $1"#)
             .bind(id)
