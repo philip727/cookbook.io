@@ -6,7 +6,7 @@ use std::{
 
 use crate::{
     database::models::{recipe::Recipe, user::User},
-    middleware::auth::AuthExtension,
+    middleware::auth::AuthenticationExtension,
     pretty_error,
     recipe_io::RecipeFileJson,
     routes::error::PrettyErrorResponse,
@@ -160,7 +160,7 @@ pub async fn create_recipe(
     pool: Data<Pool<Postgres>>,
 ) -> impl Responder {
     let extensions = req.extensions();
-    let auth = extensions.get::<AuthExtension>();
+    let auth = extensions.get::<AuthenticationExtension>();
 
     // Need to make sure we can actually get the auth details from extension
     let Some(auth) = auth else {

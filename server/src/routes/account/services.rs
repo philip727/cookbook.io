@@ -3,11 +3,11 @@ use serde_json::json;
 
 use crate::database::models::user::User;
 use crate::routes::error::PrettyErrorResponse;
-use crate::{middleware::auth::AuthExtension, pretty_error};
+use crate::{middleware::auth::AuthenticationExtension, pretty_error};
 
 pub async fn verify_jwt(req: HttpRequest) -> impl Responder {
     let extensions = req.extensions();
-    let auth = extensions.get::<AuthExtension>();
+    let auth = extensions.get::<AuthenticationExtension>();
     // Need to make sure we can actually get the auth details from extension
     let Some(auth) = auth else {
         pretty_error!(

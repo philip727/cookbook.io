@@ -5,7 +5,7 @@
     import HiddenSinglelineInput from "../../../components/HiddenSinglelineInput.svelte";
     import type { Error } from "../../../components/ErrorBox.svelte";
     import ErrorBox from "../../../components/ErrorBox.svelte";
-    import { storeJWT } from "$lib/login";
+    import { JWT_TOKEN_KEY, localJWT, } from "$lib/login";
     import { goto } from "$app/navigation";
 
     let loginError: Error | null = null;
@@ -25,7 +25,6 @@
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "*",
                 },
                 body: JSON.stringify(formData),
             },
@@ -40,7 +39,9 @@
             return;
         }
 
-        storeJWT(data.jwt);
+        localJWT.set(data.jwt);
+        window.localStorage[JWT_TOKEN_KEY] = data.jwt;
+
         await goto("/");
     }
 </script>

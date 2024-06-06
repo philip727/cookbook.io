@@ -1,10 +1,14 @@
+use std::time::Duration;
+
 use actix_cors::Cors;
 use actix_web::{
+    http::header::{ACCEPT, ACCESS_CONTROL_ALLOW_ORIGIN, AUTHORIZATION, CONTENT_TYPE},
+    middleware::Logger,
     web::{self, scope, to, Data},
     App, HttpServer,
 };
 use dotenv::dotenv;
-use middleware::auth::AuthMiddleware;
+use middleware::auth::Authentication;
 use routes::{
     account::services::verify_jwt,
     recipes::services::{create_recipe, get_recipe, get_recipes},
@@ -25,6 +29,7 @@ async fn main() -> std::io::Result<()> {
     dotenv().ok();
 
     let pool = PgPoolOptions::new()
+        .idle_timeout(Duration::from_secs(10))
         .max_connections(10)
         .connect(&std::env::var("DATABASE_URL").expect("DATABASE_URL must be set"))
         .await
@@ -32,14 +37,15 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         let cors = Cors::default()
+            .send_wildcard()
             .allow_any_origin()
-            .allowed_methods(vec!["GET", "POST"])
+            .allow_any_method()
             .allow_any_header()
             .max_age(3600);
 
         App::new()
-            .app_data(Data::new(pool.clone()))
             .wrap(cors)
+            .app_data(Data::new(pool.clone()))
             .service(
                 scope("/v1")
                     .service(actix_files::Files::new("/thumbnails", "./thumbnails"))
@@ -54,7 +60,7 @@ async fn main() -> std::io::Result<()> {
                     .service(
                         scope("/account").service(
                             web::resource("/verify")
-                                .wrap(AuthMiddleware)
+                                .wrap(Authentication)
                                 .route(web::get().to(verify_jwt)),
                         ),
                     )
@@ -62,12 +68,13 @@ async fn main() -> std::io::Result<()> {
                         scope("/recipes")
                             .service(
                                 web::resource("/create")
-                                    .wrap(AuthMiddleware)
+                                    .wrap(Authentication)
                                     .route(web::post().to(create_recipe)),
                             )
                             .service(get_recipes)
                             .service(get_recipe),
-                    ),
+                    )
+                    .wrap(Logger::default()),
             )
     })
     .bind(("127.0.0.1", 8080))?

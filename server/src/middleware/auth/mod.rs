@@ -1,52 +1,59 @@
-use std::{collections::BTreeMap, rc::Rc};
+use std::{marker::PhantomData, rc::Rc, task::Poll};
 
 use actix_web::{
+    body::{EitherBody, MessageBody},
     dev::{Service, ServiceRequest, ServiceResponse, Transform},
-    error::{ErrorInternalServerError, ErrorUnauthorized},
-    web, HttpMessage,
+    http::StatusCode,
+    HttpMessage, HttpResponse,
 };
-use futures::future::{ok, ready, Either, LocalBoxFuture, Ready};
-use sqlx::{Pool, Postgres};
+use futures::{
+    future::{ok, Either, Ready},
+    ready, Future,
+};
+use pin_project::pin_project;
+use serde_json::json;
 
-use crate::{auth::helpers::verify_jwt_token, database::models::user::User};
+use crate::auth::helpers::verify_jwt_token;
 
-pub struct AuthExtension {
+pub struct AuthenticationExtension {
     pub uid: String,
     pub username: String,
 }
 
-pub struct AuthMiddleware;
+pub struct Authentication;
 
-pub struct AuthMiddlewareService<S> {
-    service: Rc<S>,
-}
-
-impl<S, B> Transform<S, ServiceRequest> for AuthMiddleware
+impl<S, B> Transform<S, ServiceRequest> for Authentication
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error> + 'static,
     S::Future: 'static,
+    B: MessageBody,
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<EitherBody<B>>;
     type Error = actix_web::Error;
     type InitError = ();
-    type Transform = AuthMiddlewareService<S>;
+    type Transform = AuthenticationMiddleware<S>;
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        ok(AuthMiddlewareService {
+        ok(AuthenticationMiddleware {
             service: Rc::new(service),
         })
     }
 }
 
-impl<S, B> Service<ServiceRequest> for AuthMiddlewareService<S>
+pub struct AuthenticationMiddleware<S> {
+    service: Rc<S>,
+}
+
+impl<S, B> Service<ServiceRequest> for AuthenticationMiddleware<S>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error> + 'static,
     S::Future: 'static,
+    B: MessageBody,
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<EitherBody<B>>;
     type Error = actix_web::Error;
-    type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
+    type Future = Either<AuthenticationFuture<S, B>, Ready<Result<Self::Response, Self::Error>>>;
 
     fn poll_ready(
         &self,
@@ -56,59 +63,92 @@ where
     }
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        let svc = self.service.clone();
+        let Some(auth_header) = req.headers().get("Authorization") else {
+            let res = HttpResponse::with_body(StatusCode::UNAUTHORIZED, "No bearer token passed");
+            return Either::Right(ok(req
+                .into_response(res)
+                .map_into_boxed_body()
+                .map_into_right_body()));
+        };
 
-        Box::pin(async move {
-            let pool = req.app_data::<web::Data<Pool<Postgres>>>().cloned();
-            let Some(pool) = pool else {
-                return Err(ErrorInternalServerError(
-                    "No database connection when trying to authorize bearer token",
-                ));
-            };
+        let Ok(auth_str) = auth_header.to_str() else {
+            let res = HttpResponse::with_body(
+                StatusCode::UNAUTHORIZED,
+                "Failed to parse bearer token to string",
+            );
+            return Either::Right(ok(req
+                .into_response(res)
+                .map_into_boxed_body()
+                .map_into_right_body()));
+        };
 
-            let Some(auth_header) = req.headers().get("Authorization") else {
-                return Err(ErrorUnauthorized("No bearer token passed"));
-            };
+        if !auth_str.starts_with("Bearer ") {
+            let res = HttpResponse::with_body(StatusCode::UNAUTHORIZED, "Invalid bearer token");
+            return Either::Right(ok(req
+                .into_response(res)
+                .map_into_boxed_body()
+                .map_into_right_body()));
+        };
 
-            let Ok(auth_str) = auth_header.to_str() else {
-                return Err(ErrorUnauthorized("Failed to parse bearer token"));
-            };
+        let token = &auth_str[7..];
+        let try_jwt = verify_jwt_token(token);
+        if let Err(e) = try_jwt {
+            let res = HttpResponse::with_body(StatusCode::UNAUTHORIZED, e.to_string());
+            return Either::Right(ok(req
+                .into_response(res)
+                .map_into_boxed_body()
+                .map_into_right_body()));
+        };
 
-            if !auth_str.starts_with("Bearer ") {
-                return Err(ErrorUnauthorized("Invalid bearer token"));
-            };
+        // Insert uid and username into the request extensions
+        let (uid, username) = try_jwt.unwrap();
+        let Ok(uid_int) = uid.parse::<i32>() else {
+            let res = HttpResponse::with_body(
+                StatusCode::UNAUTHORIZED,
+                "Failed to parse uid passed in bearer token",
+            );
+            return Either::Right(ok(req
+                .into_response(res)
+                .map_into_boxed_body()
+                .map_into_right_body()));
+        };
 
-            let token = &auth_str[7..];
-            let try_jwt = verify_jwt_token(token);
-            if let Err(e) = try_jwt {
-                return Err(ErrorUnauthorized(e.to_string()));
-            };
+        let extension = AuthenticationExtension { uid, username };
+        req.extensions_mut().insert(extension);
 
-            // Insert uid and username into the request extensions
-            let (uid, username) = try_jwt.unwrap();
-            let Ok(uid_int) = uid.parse::<i32>() else {
-                return Err(ErrorUnauthorized(
-                    "Failed to parse uid in bear authorization",
-                ));
-            };
-
-            let user_exists = User::exists(&pool, uid_int).await;
-            if let Err(e) = user_exists {
-                return Err(ErrorInternalServerError(e.to_string()));
-            };
-
-            let user_exists = user_exists.unwrap();
-            if !user_exists {
-                return Err(ErrorInternalServerError(
-                    "The uid claim provides an invalid user id",
-                ));
-            }
-
-            let extension = AuthExtension { uid, username };
-            req.extensions_mut().insert(extension);
-
-            let res = svc.call(req).await?;
-            Ok(res)
+        Either::Left(AuthenticationFuture {
+            fut: self.service.call(req),
+            _phantom: PhantomData,
         })
+    }
+}
+
+#[pin_project]
+pub struct AuthenticationFuture<S, B>
+where
+    S: Service<ServiceRequest>,
+{
+    #[pin]
+    fut: S::Future,
+    _phantom: PhantomData<B>,
+}
+
+impl<S, B> Future for AuthenticationFuture<S, B>
+where
+    B: MessageBody,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error>,
+{
+    type Output = Result<ServiceResponse<EitherBody<B>>, actix_web::Error>;
+
+    fn poll(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Self::Output> {
+        let res = match ready!(self.project().fut.poll(cx)) {
+            Ok(res) => res,
+            Err(err) => return Poll::Ready(Err(err.into())),
+        };
+
+        Poll::Ready(Ok(res.map_into_left_body()))
     }
 }
