@@ -244,3 +244,7 @@ pub async fn login_user(
 
     HttpResponse::Ok().json(jwt_payload)
 }
+
+pub fn get_profile_picture() {
+
+}

@@ -1,6 +1,7 @@
 <script lang="ts">
     import Title from "./Title.svelte";
     import { type User, user } from "$lib/login";
+    import UserPreview from "./UserPreview.svelte";
     let currentUser: User | null = null;
 
     user.subscribe((value) => {
@@ -22,7 +23,7 @@
     </section>
     <section class="flex flex-row gap-8 w-1/3 justify-end">
         {#if currentUser}
-            {currentUser.username}
+            <UserPreview user={currentUser} />
         {:else}
             <a
                 href="/login"
