@@ -5,7 +5,7 @@
     import HiddenSinglelineInput from "../../../components/HiddenSinglelineInput.svelte";
     import type { Error } from "../../../components/ErrorBox.svelte";
     import ErrorBox from "../../../components/ErrorBox.svelte";
-    import { JWT_TOKEN_KEY, localJWT, } from "$lib/login";
+    import { JWT_TOKEN_KEY, } from "$lib/login";
     import { goto } from "$app/navigation";
 
     let loginError: Error | null = null;
@@ -39,7 +39,6 @@
             return;
         }
 
-        localJWT.set(data.jwt);
         window.localStorage[JWT_TOKEN_KEY] = data.jwt;
 
         await goto("/");

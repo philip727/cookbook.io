@@ -1,5 +1,11 @@
-<script>
+<script lang="ts">
     import Title from "./Title.svelte";
+    import { type User, user } from "$lib/login";
+    let currentUser: User | null = null;
+
+    user.subscribe((value) => {
+        currentUser = value;
+    });
 </script>
 
 <div
@@ -15,11 +21,15 @@
         <a class="" href="/recipes">RECIPES</a>
     </section>
     <section class="flex flex-row gap-8 w-1/3 justify-end">
-        <a
-            href="/login"
-            class="w-fit px-4 py-2 bg-[var(--yellow)] hover:bg-[var(--dark-yellow)] duration-200"
-        >
-            <p class="text-base font-semibold">LOGIN</p>
-        </a>
+        {#if currentUser}
+            {currentUser.username}
+        {:else}
+            <a
+                href="/login"
+                class="w-fit px-4 py-2 bg-[var(--yellow)] hover:bg-[var(--dark-yellow)] duration-200"
+            >
+                <p class="text-base font-semibold">LOGIN</p>
+            </a>
+        {/if}
     </section>
 </div>

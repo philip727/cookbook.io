@@ -1,4 +1,8 @@
-import * as jose from 'jose'
 import { writable } from 'svelte/store';
 export const JWT_TOKEN_KEY = "jwt_authorization_token";
-export const localJWT = writable("");
+
+export type User = {
+    uid: number,
+    username: string,
+}
+export const user = writable<User | null>(null);
