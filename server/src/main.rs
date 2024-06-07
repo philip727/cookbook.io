@@ -10,7 +10,7 @@ use actix_web::{
 use dotenv::dotenv;
 use middleware::auth::Authentication;
 use routes::{
-    account::services::verify_jwt,
+    account::services::{get_account_details, verify_jwt},
     recipes::services::{create_recipe, get_recipe, get_recipes},
     users::services::{get_all_users, get_user_by_id, login_user, register_user},
 };
@@ -58,11 +58,10 @@ async fn main() -> std::io::Result<()> {
                             .service(login_user),
                     )
                     .service(
-                        scope("/account").service(
-                            web::resource("/verify")
-                                .wrap(Authentication)
-                                .route(web::get().to(verify_jwt)),
-                        ),
+                        scope("/account")
+                            .wrap(Authentication)
+                            .service(web::resource("/verify").route(web::get().to(verify_jwt)))
+                            .service(web::resource("/").route(web::get().to(get_account_details))),
                     )
                     .service(
                         scope("/recipes")
