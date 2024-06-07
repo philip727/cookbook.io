@@ -1,11 +1,32 @@
 <script lang="ts">
     import Title from "./Title.svelte";
-    import { type User, user } from "$lib/login";
+    import { type User, user, JWT_TOKEN_KEY } from "$lib/login";
     import UserPreview from "./UserPreview.svelte";
+    import { onDestroy, onMount } from "svelte";
     let currentUser: User | null = null;
+    let showDropdown = false;
 
     user.subscribe((value) => {
         currentUser = value;
+    });
+
+    function handleCloseOnNearby(event: MouseEvent) {
+        if (!event.target) {
+            return;
+        }
+
+        const target = event.target as HTMLElement;
+        if (!target.closest(".dropdown") && !target.closest(".dropdown-btn")) {
+            showDropdown = false;
+        }
+    }
+
+    onMount(() => {
+        document.addEventListener("click", handleCloseOnNearby);
+    });
+
+    onDestroy(() => {
+        document.removeEventListener("click", handleCloseOnNearby);
     });
 </script>
 
@@ -23,7 +44,39 @@
     </section>
     <section class="flex flex-row gap-8 w-1/3 justify-end">
         {#if currentUser}
-            <UserPreview user={currentUser} />
+            <div class="relative dropdown-btn">
+                <button
+                    on:click={() => {
+                        showDropdown = !showDropdown;
+                    }}
+                >
+                    <UserPreview user={currentUser} />
+                </button>
+                {#if showDropdown}
+                    <div
+                        class="shadow-one absolute w-fit h-fit mt-7 right-0 flex flex-col items-end dropdown py-2 px-2 gap-2 font-medium text-sm"
+                    >
+                        <button>
+                            <h1>MY PROFILE</h1>
+                        </button>
+                        <button>
+                            <h1>MY RECIPES</h1>
+                        </button>
+                        <button>
+                            <h1>ACCOUNT</h1>
+                        </button>
+                        <button
+                            on:click={() => {
+                                localStorage.removeItem(JWT_TOKEN_KEY);
+                                user.set(null);
+                            }}
+                            class="w-32 bg-[var(--yellow)] hover:bg-[var(--dark-yellow)] py-2 transition-all duration-200"
+                        >
+                            <p class="text-sm">LOGOUT</p>
+                        </button>
+                    </div>
+                {/if}
+            </div>
         {:else}
             <a
                 href="/login"

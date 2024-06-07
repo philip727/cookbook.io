@@ -1,6 +1,7 @@
 import { JWT_TOKEN_KEY, user } from "$lib/login";
-import { endpoint } from "$lib/api";
 import type { PageLoad } from "./$types";
+import '$lib/config'
+
 
 export const load: PageLoad = async ({ fetch }) => {
     let key = window.localStorage[JWT_TOKEN_KEY];
@@ -12,12 +13,12 @@ export const load: PageLoad = async ({ fetch }) => {
         let bearer = "Bearer " + key;
         console.log(bearer);
         let response = await fetch(
-            endpoint("/account/verify") as string,
+            "http://127.0.0.1:8080/v1/account/verify",
             {
                 headers: {
                     Authorization: bearer,
                 },
-            },
+            }
         );
 
         if (!response.ok) {
@@ -34,4 +35,5 @@ export const load: PageLoad = async ({ fetch }) => {
         console.log(error);
     }
 
-}
+};
+

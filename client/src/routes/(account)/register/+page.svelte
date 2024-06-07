@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { redirect } from "@sveltejs/kit";
     import ErrorBox, { type Error } from "../../../components/ErrorBox.svelte";
     import HiddenSinglelineInput from "../../../components/HiddenSinglelineInput.svelte";
     import SuccessBox from "../../../components/SuccessBox.svelte";
@@ -7,6 +6,7 @@
     import TextSinglelineInput from "../../../components/TextSinglelineInput.svelte";
     import Title from "../../../components/Title.svelte";
     import { goto } from "$app/navigation";
+    import { endpoint } from "$lib/api";
 
     let registerError: Error | null = null;
     let registerSucess: Success | null = null;
@@ -23,7 +23,7 @@
         event.preventDefault();
 
         let response = await window.fetch(
-            "http://127.0.0.1:8080/v1/users/register",
+            endpoint("/users/register"),
             {
                 method: "POST",
                 headers: {

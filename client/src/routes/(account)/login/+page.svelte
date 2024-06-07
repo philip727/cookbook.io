@@ -7,6 +7,7 @@
     import ErrorBox from "../../../components/ErrorBox.svelte";
     import { JWT_TOKEN_KEY, } from "$lib/login";
     import { goto } from "$app/navigation";
+    import { endpoint } from "$lib/api";
 
     let loginError: Error | null = null;
     let formData = {
@@ -20,7 +21,7 @@
         event.preventDefault();
 
         let response = await window.fetch(
-            "http://127.0.0.1:8080/v1/users/login",
+            endpoint("/users/login"),
             {
                 method: "POST",
                 headers: {

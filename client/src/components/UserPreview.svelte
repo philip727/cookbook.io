@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { endpoint } from "$lib/api";
     import type { User } from "$lib/login";
 
     export let user: User | null = null;
@@ -8,7 +9,7 @@
     <div class="flex justify-end items-center flex-row-reverse gap-4">
         <img
             crossorigin="anonymous"
-            src={`http://127.0.0.1:8080/v1/pfp/${user.uid}.png`}
+            src={endpoint(`/pfp/${user.uid}.png`)}
             alt="User profile"
             class="h-12 w-12 object-cover rounded-full"
         />
