@@ -54,17 +54,26 @@
                 </button>
                 {#if showDropdown}
                     <div
-                        class="shadow-one absolute w-fit h-fit mt-7 right-0 flex flex-col items-end dropdown py-2 px-2 gap-2 font-medium text-sm"
+                        class="shadow-one absolute w-fit h-fit mt-7 right-0 flex flex-col items-end dropdown py-2 px-2 gap-2 font-medium text-sm bg-white"
                     >
                         <button>
-                            <h1>MY PROFILE</h1>
+                            <h1 class="hover:text-[var(--green)] duration-150">
+                                PROFILE
+                            </h1>
                         </button>
                         <button>
-                            <h1>MY RECIPES</h1>
+                            <h1 class="hover:text-[var(--green)] duration-150">
+                                MY RECIPES
+                            </h1>
                         </button>
-                        <button>
-                            <h1>ACCOUNT</h1>
-                        </button>
+                        <a
+                            on:click={() => (showDropdown = false)}
+                            href="/account"
+                        >
+                            <h1 class="hover:text-[var(--green)] duration-150">
+                                ACCOUNT
+                            </h1>
+                        </a>
                         <button
                             on:click={() => {
                                 localStorage.removeItem(JWT_TOKEN_KEY);
