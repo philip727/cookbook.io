@@ -5,7 +5,7 @@
     import HiddenSinglelineInput from "../../../components/HiddenSinglelineInput.svelte";
     import type { Error } from "../../../components/ErrorBox.svelte";
     import ErrorBox from "../../../components/ErrorBox.svelte";
-    import { JWT_TOKEN_KEY, } from "$lib/login";
+    import { JWT_TOKEN_KEY, requestJWTVerification, user } from "$lib/login";
     import { goto } from "$app/navigation";
     import { endpoint } from "$lib/api";
 
@@ -20,16 +20,13 @@
     ) {
         event.preventDefault();
 
-        let response = await window.fetch(
-            endpoint("/users/login"),
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(formData),
+        let response = await window.fetch(endpoint("/users/login"), {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
             },
-        );
+            body: JSON.stringify(formData),
+        });
 
         const data = await response.json();
         if (!response.ok) {
@@ -40,7 +37,17 @@
             return;
         }
 
+        // Verifies after long, not really necessary but yea
+        // Makes sure nothin tampered with u feel
         window.localStorage[JWT_TOKEN_KEY] = data.jwt;
+        let jwtClaims = await requestJWTVerification(data.jwt);
+        if (jwtClaims == null) {
+            return;
+        }
+
+        user.set({
+            ...jwtClaims,
+        });
 
         await goto("/");
     }
