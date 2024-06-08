@@ -8,7 +8,7 @@ export type AccountInfo = {
     email: string,
 }
 
-export const load: PageLoad = async () => {
+export const load: PageLoad = async ({ fetch }) => {
     let key = window.localStorage[JWT_TOKEN_KEY];
     if (key == null) {
         return;
@@ -25,11 +25,11 @@ export const load: PageLoad = async () => {
     );
 
     if (!response.ok) {
-        return null;
+        return { account: null };
     }
 
     let data = await response.json() as AccountInfo;
     return {
-        data: data,
+        account: data,
     };
 }

@@ -20,3 +20,16 @@ create table recipes
         foreign key (user_id) references users
             on delete cascade
 );
+
+create table user_details
+(
+    bio          varchar(255),
+    display_name varchar(30),
+    pronouns     varchar(20),
+    location     varchar(50),
+    user_id      integer,
+    constraint user_details_user_details__fk
+        foreign key (user_id) references users
+            on delete cascade
+);
+

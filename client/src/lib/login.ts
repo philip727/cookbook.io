@@ -9,7 +9,7 @@ export type User = {
 
 export const user = writable<User | null>(null);
 
-export const requestJWTVerification = async (key: string): Promise<User | null> => {
+export const requestJWTVerification = async (key: string, fetch: Function): Promise<User | null> => {
     try {
         let bearer = "Bearer " + key;
         console.log(bearer);
