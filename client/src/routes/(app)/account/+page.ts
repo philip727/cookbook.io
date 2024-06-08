@@ -1,6 +1,8 @@
 import { endpoint } from "$lib/api";
 import { JWT_TOKEN_KEY, } from "$lib/login";
+import { HttpStatusCode } from "axios";
 import type { PageLoad } from "./$types";
+import { goto } from "$app/navigation";
 
 export type AccountInfo = {
     uid: string,
@@ -25,6 +27,12 @@ export const load: PageLoad = async ({ fetch }) => {
     );
 
     if (!response.ok) {
+        if (response.status == HttpStatusCode.Unauthorized) {
+            window.localStorage[JWT_TOKEN_KEY] = null;
+            return goto("/");
+        }
+
+
         return { account: null };
     }
 

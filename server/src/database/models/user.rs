@@ -1,4 +1,4 @@
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -160,6 +160,48 @@ impl User {
 
         let user = user.unwrap();
         Ok(Some(user))
+    }
+
+    pub async fn get_details(
+        pool: &Pool<Postgres>,
+        id: i32,
+    ) -> Result<Option<Value>, anyhow::Error> {
+        let rows = sqlx::query(
+            r#"SELECT u.uid, u.username, ud.* FROM users u 
+            LEFT OUTER JOIN user_details ud 
+            ON u.uid = ud.user_id 
+            WHERE u.uid = $1"#,
+        )
+        .bind(id)
+        .fetch_one(pool)
+        .await;
+        println!("YAY");
+
+        if let Err(e) = rows {
+            // If we dont find one, the query was still a success but we have no result
+            if let sqlx::Error::RowNotFound = e {
+                return Ok(None);
+            }
+
+            return Err(anyhow!(format!("Failed to find user with id: {}", id)));
+        }
+
+        let user = rows.unwrap();
+        let username: Option<String> = user.try_get("username").unwrap_or(None);
+        let bio: Option<String> = user.try_get("bio").unwrap_or(None);
+        let display_name: Option<String> = user.try_get("display_name").unwrap_or(None);
+        let pronouns: Option<String> = user.try_get("pronouns").unwrap_or(None);
+        let location: Option<String> = user.try_get("location").unwrap_or(None);
+
+        let value = json!({
+            "username": username,
+            "bio": bio,
+            "display_name": display_name,
+            "pronouns": pronouns,
+            "location": location
+        });
+
+        Ok(Some(value))
     }
 
     // Queries for a user with that name and checks if we get a result

@@ -63,7 +63,7 @@ pub async fn get_account_details(
         return HttpResponse::InternalServerError().json(error);
     };
 
-    let user = User::get_by_id(&pool, uid).await;
+    let user = User::get_details(&pool, uid).await;
     if let Err(e) = user {
         return HttpResponse::InternalServerError().body(e.to_string());
     }
@@ -78,11 +78,5 @@ pub async fn get_account_details(
         return HttpResponse::NotFound().json(error);
     };
 
-    let json = json!({
-        "uid": uid,
-        "username": user.username,
-        "email": user.email,
-    });
-
-    HttpResponse::Ok().json(json)
+    HttpResponse::Ok().json(user)
 }
