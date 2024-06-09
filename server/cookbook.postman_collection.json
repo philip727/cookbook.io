@@ -73,7 +73,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://127.0.0.1:8080/v1/recipes/all",
+							"raw": "http://127.0.0.1:8080/v1/recipes/10",
 							"protocol": "http",
 							"host": [
 								"127",
@@ -85,19 +85,33 @@
 							"path": [
 								"v1",
 								"recipes",
-								"all"
+								"10"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "recipe steps",
+					"name": "create recipe",
 					"request": {
-						"method": "GET",
-						"header": [],
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{JWT_TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"title\": \"Shelleys Finest Sandwich\",\r\n    \"description\": \"A Delicious yummy sandwich made by the one and only shelley\",\r\n    \"ingredients\": [\r\n        {\r\n            \"ingredient\": \"Sugar\",\r\n            \"amount\": 200,\r\n            \"measurement\": \"Gram\"\r\n        }\r\n    ],\r\n    \"steps\": [\r\n        {\r\n            \"order\": 0,\r\n            \"step_details\": \"Put sugar on bred\"\r\n        },\r\n        {\r\n            \"order\": 1,\r\n            \"step_details\": \"Spread sugar on PLATE\"\r\n        }\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
 						"url": {
-							"raw": "http://127.0.0.1:8080/v1/recipes/steps/1",
+							"raw": "http://127.0.0.1:8080/v1/recipes/create",
 							"protocol": "http",
 							"host": [
 								"127",
@@ -109,8 +123,7 @@
 							"path": [
 								"v1",
 								"recipes",
-								"steps",
-								"1"
+								"create"
 							]
 						}
 					},
@@ -242,6 +255,135 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "account",
+			"item": [
+				{
+					"name": "verify jwt",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJleHAiOiIxNzE4MzYzNDUyIiwiaWF0IjoiMTcxNzE1Mzg1MiIsInVpZCI6IjMi1c2VybmFtZSI6ImNvb2xuYW1lIn0.UREdooYGbslp7jspW_3DCROwQeYdtpkF9evOJA0vUXkqprAEYG5rQJym3BlR_8uup4C3h5EUpcmu-v55hC4CsA"
+							}
+						],
+						"url": {
+							"raw": "http://127.0.0.1:8080/v1/account/verify",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"account",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get account details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJleHAiOiIxNzE4MzYzNDUyIiwiaWF0IjoiMTcxNzE1Mzg1MiIsInVpZCI6IjMi1c2VybmFtZSI6ImNvb2xuYW1lIn0.UREdooYGbslp7jspW_3DCROwQeYdtpkF9evOJA0vUXkqprAEYG5rQJym3BlR_8uup4C3h5EUpcmu-v55hC4CsA"
+							}
+						],
+						"url": {
+							"raw": "http://127.0.0.1:8080/v1/account/verify",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"account",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update account details",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{JWT_TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"bio\": \"I am a banana chef\",\r\n    \"location\": \"America yay\",\r\n    \"pronouns\": \"he/zir\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8080/v1/account/update_details",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8080",
+							"path": [
+								"v1",
+								"account",
+								"update_details"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "JWT_TOKEN",
+			"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJleHAiOiIxNzE4MzYzNDUyIiwiaWF0IjoiMTcxNzE1Mzg1MiIsInVpZCI6IjMiLCJ1c2VybmFtZSI6ImNvb2xuYW1lIn0.UREdooYGbslp7jspW_3DCROwQeYdtpkF9evOJA0vUXkqprAEYG5rQJym3BlR_8uup4C3h5EUpcmu-v55hC4CsA"
 		}
 	]
 }

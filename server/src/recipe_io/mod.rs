@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use crate::helpers::is_alnum_whitespace;
+use crate::helpers::is_alnum_whitespace_and_ex_chars;
 
 #[derive(Deserialize, Serialize)]
 pub struct RecipeFileJson {
@@ -40,11 +40,11 @@ impl RecipeFileJson {
     }
 
     fn validate_title(&self) -> bool {
-        is_alnum_whitespace(&self.title)
+        is_alnum_whitespace_and_ex_chars(&self.title)
     }
 
     fn validate_desc(&self) -> bool {
-        is_alnum_whitespace(&self.description)
+        is_alnum_whitespace_and_ex_chars(&self.description)
     }
 }
 
@@ -82,6 +82,6 @@ pub struct RecipeStep {
 
 impl RecipeStep {
     pub fn validate_step_details(&self) -> bool {
-        is_alnum_whitespace(&self.step_details)
+        is_alnum_whitespace_and_ex_chars(&self.step_details)
     }
 }

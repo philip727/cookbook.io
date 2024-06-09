@@ -12,7 +12,7 @@ use sqlx::{Pool, Postgres};
 use crate::{
     auth::helpers::get_signed_jwt_token,
     database::models::user::User,
-    helpers::is_alnum_whitespace,
+    helpers::is_alnum_whitespace_and_ex_chars,
     pretty_error,
     routes::{
         error::PrettyErrorResponse,
@@ -156,7 +156,7 @@ pub async fn login_user(
     if User::email_is_valid(&payload.identifier) {
         identifier = Some(LoginIdentifier::Email(payload.identifier.to_string()));
     } else {
-        if !is_alnum_whitespace(&payload.identifier) {
+        if !is_alnum_whitespace_and_ex_chars(&payload.identifier) {
             pretty_error!(
                 "The identifier is invalid".to_string(),
                 format!("Please provide a username(only alphanumerical) or email"),
