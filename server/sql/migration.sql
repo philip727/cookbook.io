@@ -28,8 +28,9 @@ create table user_details
     pronouns     varchar(20),
     location     varchar(50),
     user_id      integer,
+    constraint user_details_pk
+        unique (user_id),
     constraint user_details_user_details__fk
         foreign key (user_id) references users
             on delete cascade
 );
-
