@@ -43,7 +43,10 @@
             },
             body: JSON.stringify(json),
         });
+
+
     }
+
 </script>
 
 <section class="w-full">
@@ -62,7 +65,7 @@
                     placeholder={data.account.display_name == null
                         ? ""
                         : data.account.display_name}
-                    extraClass="text-xs py-px border h-fit pl-1"
+                    extraClass="text-xs !py-px !pl-1"
                 />
             </div>
             <div>
@@ -70,7 +73,7 @@
                 <TextMultilineInput
                     bind:value={changeData.bio}
                     placeholder={"Tell us a little bit about yourself"}
-                    extraClass="text-xs py-px border h-fit pl-1 h-24"
+                    extraClass="text-xs !py-px !pl-1 !h-24"
                 />
             </div>
             <div class="">
@@ -78,7 +81,7 @@
                 <TextSinglelineInput
                     bind:value={changeData.pronouns}
                     placeholder={data.account.pronouns}
-                    extraClass="text-xs py-px border h-fit pl-1"
+                    extraClass="text-xs !py-px !pl-1"
                 />
             </div>
             <div class="">
@@ -86,7 +89,7 @@
                 <TextSinglelineInput
                     bind:value={changeData.location}
                     placeholder="Enter your location (do not put your address)"
-                    extraClass="text-xs py-px border h-fit pl-1"
+                    extraClass="text-xs !py-px !pl-1"
                 />
             </div>
             <button
