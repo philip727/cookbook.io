@@ -43,7 +43,7 @@ pub async fn get_recipes(
     }
 
     let recipes =
-        Recipe::get_paginated(&pool, pagination.offset.unwrap(), pagination.limit.unwrap()).await;
+        Recipe::get_paginated_recipes_with_poster(&pool, pagination.offset.unwrap(), pagination.limit.unwrap()).await;
 
     if let Err(e) = recipes {
         pretty_error!("Failed to get recipes".to_string(), e.to_string(), error);
@@ -54,16 +54,6 @@ pub async fn get_recipes(
 
     let mut json_values: Vec<serde_json::Value> = Vec::new();
     for recipe in recipes.iter() {
-        let user = User::get_by_id(&pool, recipe.user_id).await;
-
-        let Ok(user) = user else {
-            continue;
-        };
-
-        let Some(user) = user else {
-            continue;
-        };
-
         // Read recipe json
         let file_path = RECIPE_DIR.to_string() + recipe.recipe_file_path.as_str();
         let file = File::open(file_path);
@@ -91,8 +81,8 @@ pub async fn get_recipes(
         // Push value to vec
         let value = json!({
             "poster": {
-                "uid": user.uid,
-                "username": user.username
+                "uid": recipe.poster.uid,
+                "username": recipe.poster.username
             },
             "recipe": {
                 "id": recipe.id,
