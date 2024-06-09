@@ -1,12 +1,16 @@
 <script lang="ts">
     import { endpoint } from "$lib/api";
     import { JWT_TOKEN_KEY } from "$lib/login";
+    import ErrorBox, { type Error } from "../../../components/ErrorBox.svelte";
+    import type { Success } from "../../../components/SuccessBox.svelte";
+    import SuccessBox from "../../../components/SuccessBox.svelte";
     import TextMultilineInput from "../../../components/TextMultilineInput.svelte";
     import TextSinglelineInput from "../../../components/TextSinglelineInput.svelte";
     import type { PageData } from "./$types";
 
     export let data: PageData;
-
+    let submitError: Error | null = null;
+    let submitSuccess: Success | null = null;
     let changeData = {
         display_name: data.account?.display_name,
         bio: data.account?.bio,
@@ -44,9 +48,20 @@
             body: JSON.stringify(json),
         });
 
+        if (!response.ok) {
+            const data = await response.json();
+            submitError = {
+                error: data.error,
+                description: data.description,
+            };
+            return;
+        }
 
+        submitSuccess = {
+            title: "Updated",
+            description: "Successfully updated your account details",
+        };
     }
-
 </script>
 
 <section class="w-full">
@@ -98,6 +113,17 @@
             >
                 <p class="text-base font-semibold">SAVE CHANGES</p>
             </button>
+            {#if submitError != null && submitSuccess == null}
+                <ErrorBox
+                    error={submitError.error}
+                    description={submitError.description}
+                />
+            {:else if submitSuccess != null}
+                <SuccessBox
+                    title={submitSuccess.title}
+                    description={submitSuccess.description}
+                />
+            {/if}
         </form>
     {:else}
         <p class="text-sm tracking-wider">Failed to load account data</p>

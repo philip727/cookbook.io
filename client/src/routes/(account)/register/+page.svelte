@@ -9,7 +9,7 @@
     import { endpoint } from "$lib/api";
 
     let registerError: Error | null = null;
-    let registerSucess: Success | null = null;
+    let registerSuccess: Success | null = null;
     let formData = {
         username: "",
         email: "",
@@ -22,17 +22,14 @@
     ) {
         event.preventDefault();
 
-        let response = await window.fetch(
-            endpoint("/users/register"),
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                },
-                body: JSON.stringify(formData),
+        let response = await window.fetch(endpoint("/users/register"), {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
             },
-        );
+            body: JSON.stringify(formData),
+        });
 
         const data = await response.json();
         if (!response.ok) {
@@ -43,7 +40,7 @@
             return;
         }
 
-        registerSucess = {
+        registerSuccess = {
             title: "Welcome",
             description: "Thank you for registering with us!",
         };
@@ -56,18 +53,17 @@
     <Title textClass="text-4xl" />
     <form on:submit={handleSubmit} class="w-80 h-fit shadow-one mt-4 px-4 py-3">
         <h1 class="text-3xl font-bold">Register</h1>
-        {#if registerError != null && registerSucess == null}
+        {#if registerError != null && registerSuccess == null}
             <ErrorBox
                 extraClass="mt-6"
                 error={registerError.error}
                 description={registerError.description}
             />
-        {/if}
-        {#if registerSucess != null}
+        {:else if registerSuccess != null}
             <SuccessBox
                 extraClass="mt-6"
-                title="Welcome"
-                description="Thank you for registering with us!"
+                title={registerSuccess.title}
+                description={registerSuccess.description}
             />
         {/if}
         <TextSinglelineInput
