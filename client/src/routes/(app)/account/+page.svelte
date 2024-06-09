@@ -1,22 +1,101 @@
 <script lang="ts">
+    import { endpoint } from "$lib/api";
+    import { JWT_TOKEN_KEY } from "$lib/login";
+    import TextMultilineInput from "../../../components/TextMultilineInput.svelte";
     import TextSinglelineInput from "../../../components/TextSinglelineInput.svelte";
     import type { PageData } from "./$types";
 
     export let data: PageData;
+
+    let changeData = {
+        display_name: data.account?.display_name,
+        bio: data.account?.bio,
+        pronouns: data.account?.pronouns,
+        location: data.account?.location,
+    };
+
+    async function submitChanges(
+        event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement },
+    ) {
+        event.preventDefault();
+
+        let key = window.localStorage[JWT_TOKEN_KEY];
+        if (key == null) {
+            return;
+        }
+
+        let bearer = "Bearer " + key;
+
+        // Need to null empty values for serialization on server side
+        let json = {
+            display_name:
+                changeData.display_name == "" ? null : changeData.display_name,
+            bio: changeData.bio == "" ? null : changeData.bio,
+            pronouns: changeData.pronouns == "" ? null : changeData.pronouns,
+            location: changeData.location == "" ? null : changeData.location,
+        };
+
+        let response = await window.fetch(endpoint("/account/update_details"), {
+            method: "POST",
+            headers: {
+                Authorization: bearer,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(json),
+        });
+    }
 </script>
 
-<section>
+<section class="w-full">
     {#if data.account != null}
-        <div class="flex flex-col gap-2">
-            <div>
+        <form class="flex flex-col gap-2" on:submit={submitChanges}>
+            <div class="">
                 <p class="text-sm tracking-wider font-semibold">username</p>
+                <p class="text-xs py-px h-fit">
+                    {data.account.username}
+                </p>
+            </div>
+            <div class="">
+                <p class="text-sm tracking-wider font-semibold">display name</p>
                 <TextSinglelineInput
-                    placeholder={data.account.username}
+                    bind:value={changeData.display_name}
+                    placeholder={data.account.display_name == null
+                        ? ""
+                        : data.account.display_name}
                     extraClass="text-xs py-px border h-fit pl-1"
                 />
             </div>
-
-        </div>
+            <div>
+                <p class="text-sm tracking-wider font-semibold">bio</p>
+                <TextMultilineInput
+                    bind:value={changeData.bio}
+                    placeholder={"Tell us a little bit about yourself"}
+                    extraClass="text-xs py-px border h-fit pl-1 h-24"
+                />
+            </div>
+            <div class="">
+                <p class="text-sm tracking-wider font-semibold">pronouns</p>
+                <TextSinglelineInput
+                    bind:value={changeData.pronouns}
+                    placeholder={data.account.pronouns}
+                    extraClass="text-xs py-px border h-fit pl-1"
+                />
+            </div>
+            <div class="">
+                <p class="text-sm tracking-wider font-semibold">location</p>
+                <TextSinglelineInput
+                    bind:value={changeData.location}
+                    placeholder="Enter your location (do not put your address)"
+                    extraClass="text-xs py-px border h-fit pl-1"
+                />
+            </div>
+            <button
+                type="submit"
+                class="w-full bg-[var(--yellow)] hover:bg-[var(--dark-yellow)] py-2 mt-2 transition-all duration-200"
+            >
+                <p class="text-base font-semibold">SAVE CHANGES</p>
+            </button>
+        </form>
     {:else}
         <p class="text-sm tracking-wider">Failed to load account data</p>
     {/if}

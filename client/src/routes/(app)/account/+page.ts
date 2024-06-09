@@ -5,9 +5,11 @@ import type { PageLoad } from "./$types";
 import { goto } from "$app/navigation";
 
 export type AccountInfo = {
-    uid: string,
     username: string,
-    email: string,
+    bio: string | null,
+    display_name: string | null,
+    location: string | null,
+    pronouns: string | null,
 }
 
 export const load: PageLoad = async ({ fetch }) => {
@@ -29,7 +31,7 @@ export const load: PageLoad = async ({ fetch }) => {
     if (!response.ok) {
         if (response.status == HttpStatusCode.Unauthorized) {
             window.localStorage[JWT_TOKEN_KEY] = null;
-            return goto("/");
+            goto("/");
         }
 
 

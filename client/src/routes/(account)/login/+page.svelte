@@ -40,7 +40,7 @@
         // Verifies after long, not really necessary but yea
         // Makes sure nothin tampered with u feel
         window.localStorage[JWT_TOKEN_KEY] = data.jwt;
-        let jwtClaims = await requestJWTVerification(data.jwt);
+        let jwtClaims = await requestJWTVerification(data.jwt, window.fetch);
         if (jwtClaims == null) {
             return;
         }
