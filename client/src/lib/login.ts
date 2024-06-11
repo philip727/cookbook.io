@@ -2,14 +2,14 @@ import { writable } from 'svelte/store';
 import { endpoint } from './api';
 export const JWT_TOKEN_KEY = "jwt_authorization_token";
 
-export type User = {
+export type JWTClaims = {
     uid: number,
     username: string,
 }
 
-export const user = writable<User | null>(null);
+export const user = writable<JWTClaims | null>(null);
 
-export const requestJWTVerification = async (key: string, fetch: Function): Promise<User | null> => {
+export const requestJWTVerification = async (key: string, fetch: Function): Promise<JWTClaims | null> => {
     try {
         let bearer = "Bearer " + key;
         console.log(bearer);
