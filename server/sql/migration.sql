@@ -34,3 +34,26 @@ create table user_details
         foreign key (user_id) references users
             on delete cascade
 );
+
+create table recipe_thumbnails
+(
+    recipe_id      integer not null,
+    thumbnail_path varchar(255),
+    constraint thumbnails_pk
+        unique (recipe_id),
+    constraint thumbnails___fk
+        foreign key (recipe_id) references recipes
+            on delete cascade
+);
+
+create table profile_pictures
+(
+    user_id      integer not null,
+    picture_path varchar(2550),
+    constraint profile_pictures_pk
+        unique (user_id),
+    constraint profile_pictures___fk
+        foreign key (user_id) references users
+            on delete cascade
+);
+

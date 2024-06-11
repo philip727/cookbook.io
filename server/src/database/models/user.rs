@@ -92,10 +92,16 @@ impl User {
         pool: &Pool<Postgres>,
         id: i32,
     ) -> Result<Option<Value>, anyhow::Error> {
-        let row = sqlx::query(r#"SELECT uid, username FROM users WHERE uid = $1"#)
-            .bind(id)
-            .fetch_one(pool)
-            .await;
+        let row = sqlx::query(
+            r#"
+            SELECT u.uid, u.username, pp.picture_path 
+            FROM users u LEFT JOIN profile_pictures pp ON u.uid = pp.user_id 
+            WHERE uid = $1;
+        "#,
+        )
+        .bind(id)
+        .fetch_one(pool)
+        .await;
 
         if let Err(e) = row {
             // If we dont find one, the query was still a success but we have no result
@@ -109,10 +115,12 @@ impl User {
         let row = row.unwrap();
         let uid: i32 = row.try_get("uid").context("Failed to get uid")?;
         let username: String = row.try_get("username").context("Failed to get username")?;
+        let picture_path: Option<String> = row.try_get("picture_path").unwrap_or(None);
 
         Ok(Some(json!({
             "uid": uid,
             "username": username,
+            "picture": picture_path,
         })))
     }
 
@@ -167,15 +175,16 @@ impl User {
         id: i32,
     ) -> Result<Option<Value>, anyhow::Error> {
         let rows = sqlx::query(
-            r#"SELECT u.uid, u.username, ud.* FROM users u 
+            r#"SELECT u.uid, u.username, ud.*, pp.picture_path FROM users u 
             LEFT OUTER JOIN user_details ud 
             ON u.uid = ud.user_id 
+            LEFT OUTER JOIN profile_pictures pp
+            ON u.uid = pp.user_id
             WHERE u.uid = $1"#,
         )
         .bind(id)
         .fetch_one(pool)
         .await;
-        println!("YAY");
 
         if let Err(e) = rows {
             // If we dont find one, the query was still a success but we have no result
@@ -192,13 +201,15 @@ impl User {
         let display_name: Option<String> = user.try_get("display_name").unwrap_or(None);
         let pronouns: Option<String> = user.try_get("pronouns").unwrap_or(None);
         let location: Option<String> = user.try_get("location").unwrap_or(None);
+        let picture_path: Option<String> = user.try_get("picture_path").unwrap_or(None);
 
         let value = json!({
             "username": username,
             "bio": bio,
             "display_name": display_name,
             "pronouns": pronouns,
-            "location": location
+            "location": location,
+            "picture": picture_path
         });
 
         Ok(Some(value))

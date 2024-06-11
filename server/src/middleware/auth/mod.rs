@@ -11,7 +11,6 @@ use futures::{
     ready, Future,
 };
 use pin_project::pin_project;
-use serde_json::json;
 
 use crate::auth::helpers::verify_jwt_token;
 
