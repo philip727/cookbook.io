@@ -1,5 +1,5 @@
-export type PublicUserProfile = {
+export type PublicUserProfileDetails = {
     uid: number,
     username: string,
-    picture_path: string | null,
+    picture: string | null,
 }

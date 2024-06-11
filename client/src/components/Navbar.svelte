@@ -3,7 +3,8 @@
     import { type JWTClaims, user, JWT_TOKEN_KEY } from "$lib/login";
     import UserPreview from "./UserPreview.svelte";
     import { onDestroy, onMount } from "svelte";
-    let currentUser: JWTClaims | null = null;
+    import type { PublicUserProfileDetails } from "$lib/profile";
+    let currentUser: PublicUserProfileDetails | null = null;
     let showDropdown = false;
 
     user.subscribe((value) => {

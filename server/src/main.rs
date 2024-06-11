@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use actix_cors::Cors;
 use actix_web::{
-    http::header::{ACCEPT, ACCESS_CONTROL_ALLOW_ORIGIN, AUTHORIZATION, CONTENT_TYPE},
     middleware::Logger,
     web::{self, scope, to, Data},
     App, HttpServer,

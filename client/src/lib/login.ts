@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store';
 import { endpoint } from './api';
+import type { PublicUserProfileDetails } from './profile';
 export const JWT_TOKEN_KEY = "jwt_authorization_token";
 
 export type JWTClaims = {
@@ -7,12 +8,11 @@ export type JWTClaims = {
     username: string,
 }
 
-export const user = writable<JWTClaims | null>(null);
+export const user = writable<PublicUserProfileDetails | null>(null);
 
 export const requestJWTVerification = async (key: string, fetch: Function): Promise<JWTClaims | null> => {
     try {
         let bearer = "Bearer " + key;
-        console.log(bearer);
         let response = await fetch(
             endpoint("/account/verify") as string,
             {
@@ -23,16 +23,14 @@ export const requestJWTVerification = async (key: string, fetch: Function): Prom
         );
 
         if (!response.ok) {
-            let text = await response.text();
-            console.log(text);
+            //let _ = await response.text();
             return null;
         }
 
-        const data = await response.json();
+        // return jwt claims
+        const data = await response.json() as JWTClaims;
         return data;
     } catch (error) {
-        console.log(error);
-
         return null
     }
 }

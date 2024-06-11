@@ -1,7 +1,8 @@
 <script lang="ts">
     import { endpoint } from "$lib/api";
     import { JWT_TOKEN_KEY } from "$lib/login";
-    import ErrorBox, { type ResponseError } from "../../../components/ErrorBox.svelte";
+    import type { ResponseError } from "../../../components/ErrorBox";
+    import ErrorBox from "../../../components/ErrorBox.svelte";
     import type { Success } from "../../../components/SuccessBox.svelte";
     import SuccessBox from "../../../components/SuccessBox.svelte";
     import TextMultilineInput from "../../../components/TextMultilineInput.svelte";
@@ -11,6 +12,7 @@
     export let data: PageData;
     let submitError: ResponseError | null = null;
     let submitSuccess: Success | null = null;
+
     let changeData = {
         display_name: data.account?.display_name,
         bio: data.account?.bio,
@@ -95,7 +97,9 @@
                 <p class="text-sm tracking-wider font-semibold">pronouns</p>
                 <TextSinglelineInput
                     bind:value={changeData.pronouns}
-                    placeholder={data.account.pronouns}
+                    placeholder={data.account.pronouns == null
+                        ? ""
+                        : data.account.pronouns}
                     extraClass="text-xs !py-px !pl-1"
                 />
             </div>
