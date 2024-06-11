@@ -34,3 +34,20 @@ export const requestJWTVerification = async (key: string, fetch: Function): Prom
         return null
     }
 }
+
+// Attempt to login and get user details
+export const attemptJWTLogin =  async (key: string, fetch: Function): Promise<PublicUserProfileDetails | null> => {
+    let jwtClaims = await requestJWTVerification(key, fetch);
+    if (jwtClaims == null) {
+        return null;
+    }
+
+    let localUserDetails = await fetch(endpoint(`/users/${jwtClaims.uid}`));
+    if (!localUserDetails.ok) {
+        return null;
+    };
+
+    let userDetails = await localUserDetails.json() as PublicUserProfileDetails;
+
+    return userDetails;
+}

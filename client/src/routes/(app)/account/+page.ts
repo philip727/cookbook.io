@@ -10,6 +10,7 @@ export type AccountInfo = {
     display_name: string | null,
     location: string | null,
     pronouns: string | null,
+    picture: string | null,
 }
 
 export const load: PageLoad = async ({ fetch }) => {
@@ -39,6 +40,7 @@ export const load: PageLoad = async ({ fetch }) => {
     }
 
     let data = await response.json() as AccountInfo;
+    console.log(data);
     return {
         account: data,
     };

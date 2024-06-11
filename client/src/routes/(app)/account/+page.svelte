@@ -20,6 +20,20 @@
         location: data.account?.location,
     };
 
+    // Compares the account data retrieved and the data to submit to see if they are different
+    function submittableDataIsUnchanged(): boolean {
+        if (!data.account) {
+            return false;
+        }
+
+        return (
+            data.account.display_name == changeData.display_name &&
+            data.account.bio == changeData.bio &&
+            data.account.pronouns == changeData.pronouns &&
+            data.account.location == changeData.location
+        );
+    }
+
     async function submitChanges(
         event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement },
     ) {
@@ -111,12 +125,31 @@
                     extraClass="text-xs !py-px !pl-1"
                 />
             </div>
+            <div class="h-fit mt-2 flex flex-row">
+                <img
+                    class="h-16 w-16 object-cover"
+                    src={endpoint(`/pfp/${data.account.picture}`)}
+                    alt="User profile avatar"
+                />
+            </div>
+            <!-- 
+            {#if submittableDataIsUnchanged()}
+                <div
+                    class="w-full bg-gray-400 hover:bg-gray-500 py-2 mt-2 transition-all duration-200 flex flex-row items-center justify-center cursor-pointer"
+                >
+                    <p class="text-base font-semibold">SAVE CHANGES</p>
+                </div>
+            {:else}
+                -->
             <button
                 type="submit"
                 class="w-full bg-[var(--yellow)] hover:bg-[var(--dark-yellow)] py-2 mt-2 transition-all duration-200"
             >
                 <p class="text-base font-semibold">SAVE CHANGES</p>
             </button>
+            <!-- 
+            {/if}
+            -->
             {#if submitError != null && submitSuccess == null}
                 <ErrorBox
                     error={submitError.error}
