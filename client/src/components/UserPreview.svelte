@@ -1,8 +1,8 @@
 <script lang="ts">
     import { endpoint } from "$lib/api";
-    import type { User } from "$lib/login";
+    import type { JWTClaims } from "$lib/login";
 
-    export let user: User | null = null;
+    export let user: JWTClaims | null = null;
 </script>
 
 {#if user}

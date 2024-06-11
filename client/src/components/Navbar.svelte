@@ -1,9 +1,9 @@
 <script lang="ts">
     import Title from "./Title.svelte";
-    import { type User, user, JWT_TOKEN_KEY } from "$lib/login";
+    import { type JWTClaims, user, JWT_TOKEN_KEY } from "$lib/login";
     import UserPreview from "./UserPreview.svelte";
     import { onDestroy, onMount } from "svelte";
-    let currentUser: User | null = null;
+    let currentUser: JWTClaims | null = null;
     let showDropdown = false;
 
     user.subscribe((value) => {

@@ -1,10 +1,3 @@
-<script lang="ts" context="module">
-    export type Error = {
-        error: string;
-        description: string;
-    };
-</script>
-
 <script lang="ts">
     export let extraClass = "";
     export let error;
