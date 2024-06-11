@@ -1,15 +1,14 @@
 <script lang="ts">
-    import { redirect } from "@sveltejs/kit";
     import TextSinglelineInput from "../../../components/TextSinglelineInput.svelte";
     import Title from "../../../components/Title.svelte";
     import HiddenSinglelineInput from "../../../components/HiddenSinglelineInput.svelte";
-    import type { Error } from "../../../components/ErrorBox.svelte";
     import ErrorBox from "../../../components/ErrorBox.svelte";
     import { JWT_TOKEN_KEY, requestJWTVerification, user } from "$lib/login";
     import { goto } from "$app/navigation";
     import { endpoint } from "$lib/api";
+    import type { ResponseError } from "../../../components/ErrorBox";
 
-    let loginError: Error | null = null;
+    let loginError: ResponseError | null = null;
     let formData = {
         identifier: "",
         password: "",
@@ -37,7 +36,7 @@
             return;
         }
 
-        // Verifies after long, not really necessary but yea
+        // Verifies after login, not really necessary but yea
         // Makes sure nothin tampered with u feel
         window.localStorage[JWT_TOKEN_KEY] = data.jwt;
         let jwtClaims = await requestJWTVerification(data.jwt, window.fetch);

@@ -1,7 +1,7 @@
 <script lang="ts">
     import { endpoint } from "$lib/api";
     import { JWT_TOKEN_KEY } from "$lib/login";
-    import ErrorBox, { type Error } from "../../../components/ErrorBox.svelte";
+    import ErrorBox, { type ResponseError } from "../../../components/ErrorBox.svelte";
     import type { Success } from "../../../components/SuccessBox.svelte";
     import SuccessBox from "../../../components/SuccessBox.svelte";
     import TextMultilineInput from "../../../components/TextMultilineInput.svelte";
@@ -9,7 +9,7 @@
     import type { PageData } from "./$types";
 
     export let data: PageData;
-    let submitError: Error | null = null;
+    let submitError: ResponseError | null = null;
     let submitSuccess: Success | null = null;
     let changeData = {
         display_name: data.account?.display_name,

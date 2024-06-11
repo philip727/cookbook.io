@@ -1,5 +1,5 @@
 <script lang="ts">
-    import ErrorBox, { type Error } from "../../../components/ErrorBox.svelte";
+    import ErrorBox from "../../../components/ErrorBox.svelte";
     import HiddenSinglelineInput from "../../../components/HiddenSinglelineInput.svelte";
     import SuccessBox from "../../../components/SuccessBox.svelte";
     import type { Success } from "../../../components/SuccessBox.svelte";
@@ -7,8 +7,9 @@
     import Title from "../../../components/Title.svelte";
     import { goto } from "$app/navigation";
     import { endpoint } from "$lib/api";
+    import type { ResponseError } from "../../../components/ErrorBox";
 
-    let registerError: Error | null = null;
+    let registerError: ResponseError | null = null;
     let registerSuccess: Success | null = null;
     let formData = {
         username: "",
