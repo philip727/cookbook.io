@@ -11,7 +11,7 @@
         currentUser = value;
     });
 
-    function handleCloseOnNearby(event: MouseEvent) {
+    function closeDropdownWhenNotClicked(event: MouseEvent) {
         if (!event.target) {
             return;
         }
@@ -23,11 +23,11 @@
     }
 
     onMount(() => {
-        document.addEventListener("click", handleCloseOnNearby);
+        document.addEventListener("click", closeDropdownWhenNotClicked);
     });
 
     onDestroy(() => {
-        document.removeEventListener("click", handleCloseOnNearby);
+        document.removeEventListener("click", closeDropdownWhenNotClicked);
     });
 </script>
 

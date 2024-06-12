@@ -14,7 +14,7 @@
         password: "",
     };
 
-    async function handleSubmit(
+    async function login(
         event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement },
     ) {
         event.preventDefault();
@@ -56,7 +56,7 @@
 <div class="flex flex-col justify-center items-center w-full h-screen">
     <Title textClass="text-4xl" />
     <form
-        on:submit={handleSubmit}
+        on:submit={login}
         method="POST"
         class="w-80 h-fit shadow-one mt-4 px-4 py-3"
     >

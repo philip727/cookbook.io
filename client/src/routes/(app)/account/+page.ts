@@ -35,12 +35,10 @@ export const load: PageLoad = async ({ fetch }) => {
             goto("/");
         }
 
-
         return { account: null };
     }
 
     let data = await response.json() as AccountInfo;
-    console.log(data);
     return {
         account: data,
     };

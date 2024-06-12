@@ -18,7 +18,7 @@
         confirm_password: "",
     };
 
-    async function handleSubmit(
+    async function register(
         event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement },
     ) {
         event.preventDefault();
@@ -52,7 +52,7 @@
 
 <div class="flex flex-col justify-center items-center w-full h-screen">
     <Title textClass="text-4xl" />
-    <form on:submit={handleSubmit} class="w-80 h-fit shadow-one mt-4 px-4 py-3">
+    <form on:submit={register} class="w-80 h-fit shadow-one mt-4 px-4 py-3">
         <h1 class="text-3xl font-bold">Register</h1>
         {#if registerError != null && registerSuccess == null}
             <ErrorBox
@@ -104,4 +104,5 @@
             <p class="text-base font-semibold">REGISTER</p>
         </button>
     </form>
+
 </div>
