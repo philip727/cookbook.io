@@ -1,5 +1,10 @@
+use std::path::PathBuf;
+use std::str::FromStr;
+
+use actix_multipart::form::MultipartForm;
 use actix_web::web::{self, Data};
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, Responder};
+use mime::Mime;
 use serde_json::json;
 use sqlx::{Pool, Postgres};
 
@@ -9,7 +14,7 @@ use crate::helpers::{is_alnum_whitespace, is_alnum_whitespace_and_ex_chars};
 use crate::routes::error::PrettyErrorResponse;
 use crate::{middleware::auth::AuthenticationExtension, pretty_error};
 
-use super::helpers::UpdateUserDetailsPayload;
+use super::helpers::{UpdateUserDetailsPayload, UploadPictureForm};
 
 pub async fn verify_jwt(req: HttpRequest) -> impl Responder {
     let extensions = req.extensions();
@@ -171,4 +176,49 @@ pub async fn update_account_details(
     };
 
     HttpResponse::Ok().body("Account details succesfully updated")
+}
+
+pub async fn upload_profile_picture(
+    MultipartForm(form): MultipartForm<UploadPictureForm>,
+) -> impl Responder {
+    println!("{:?}", form.picture.content_type);
+    let Some(mime_type) = &form.picture.content_type else {
+        pretty_error!(
+            "Invalid picture",
+            "Couldn't get mime type",
+            error
+        );
+
+        return HttpResponse::BadRequest().json(error);
+    };
+
+    if mime_type != &"image/jpeg" && mime_type != &"image/png"  {
+        pretty_error!(
+            "Invalid picture",
+            "An invalid mime type was passed, only jpeg/png",
+            error
+        );
+
+        return HttpResponse::BadRequest().json(error);
+    }
+
+    let temp_file_path = form.picture.file.path();
+    let file_name: &str = form
+        .picture
+        .file_name
+        .as_ref()
+        .map(|m| m.as_ref())
+        .unwrap_or("null");
+
+    let mut file_path = PathBuf::from_str("./profile_pictures").unwrap();
+    file_path.push(&sanitize_filename::sanitize(&file_name));
+
+    match std::fs::rename(temp_file_path, file_path) {
+        Ok(_) => HttpResponse::Ok().body("Yay"),
+        Err(e) => {
+            pretty_error!("Invalid picture", e.to_string(), error);
+
+            HttpResponse::BadRequest().json(error)
+        }
+    }
 }

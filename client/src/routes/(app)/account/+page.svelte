@@ -1,6 +1,7 @@
 <script lang="ts">
     import { endpoint } from "$lib/api";
     import { JWT_TOKEN_KEY } from "$lib/login";
+    import { HttpStatusCode } from "axios";
     import type { ResponseError } from "../../../components/ErrorBox";
     import ErrorBox from "../../../components/ErrorBox.svelte";
     import type { Success } from "../../../components/SuccessBox.svelte";
@@ -8,11 +9,14 @@
     import TextMultilineInput from "../../../components/TextMultilineInput.svelte";
     import TextSinglelineInput from "../../../components/TextSinglelineInput.svelte";
     import type { PageData } from "./$types";
+    import { goto } from "$app/navigation";
 
+    // Retrieved account data
     export let data: PageData;
+
+    // The data we submit/change
     let submitError: ResponseError | null = null;
     let submitSuccess: Success | null = null;
-
     let changeData = {
         display_name: data.account?.display_name,
         bio: data.account?.bio,
@@ -34,7 +38,7 @@
         );
     }
 
-    async function submitChanges(
+    async function updateAccountDetails(
         event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement },
     ) {
         event.preventDefault();
@@ -78,11 +82,46 @@
             description: "Successfully updated your account details",
         };
     }
+
+    const uploadProfilePicture = async (formData: FormData) => {
+        let key = window.localStorage[JWT_TOKEN_KEY];
+        if (key == null) {
+            return;
+        }
+
+        let bearer = "Bearer " + key;
+        const response = await window.fetch(endpoint("/account/upload_pfp"), {
+            method: "POST",
+            body: formData,
+            headers: {
+                Authorization: bearer,
+            },
+        });
+
+        if (!response.ok) {
+            if (response.status == HttpStatusCode.Unauthorized) {
+                window.localStorage[JWT_TOKEN_KEY] = null;
+                goto("/");
+            }
+
+            return;
+        }
+        let data = await response.text();
+    };
+
+    let files: FileList;
+    // Submit as soon as it changes
+    $: if (files && files.item(0)) {
+        // Uploads the profile picture
+        const formData = new FormData();
+        formData.append("picture", files.item(0) as File);
+        uploadProfilePicture(formData);
+    }
 </script>
 
 <section class="w-full">
     {#if data.account != null}
-        <form class="flex flex-col gap-2" on:submit={submitChanges}>
+        <form class="flex flex-col gap-2" on:submit={updateAccountDetails}>
             <div class="">
                 <p class="text-sm tracking-wider font-semibold">username</p>
                 <p class="text-xs py-px h-fit">
@@ -130,6 +169,12 @@
                     class="h-16 w-16 object-cover"
                     src={endpoint(`/pfp/${data.account.picture}`)}
                     alt="User profile avatar"
+                />
+                <input
+                    class="h-16"
+                    type="file"
+                    accept="image/png, image/jpeg"
+                    bind:files
                 />
             </div>
             <!-- 
