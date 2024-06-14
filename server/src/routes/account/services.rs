@@ -8,6 +8,7 @@ use actix_web::{HttpMessage, HttpRequest, HttpResponse, Responder};
 use serde_json::json;
 use sqlx::{Pool, Postgres};
 
+use crate::database::models::profile_picture::ProfilePicture;
 use crate::database::models::user::User;
 use crate::database::models::user_details::UserDetails;
 use crate::extractors::auth::Authorized;
@@ -182,6 +183,7 @@ pub async fn update_account_details(
 pub async fn upload_profile_picture(
     MultipartForm(form): MultipartForm<UploadPictureForm>,
     authorized: Authorized,
+    pool: Data<Pool<Postgres>>,
 ) -> impl Responder {
     if let Authorized::Failed(reason) = authorized {
         pretty_error!("Unauthorized", reason, error);
@@ -213,12 +215,7 @@ pub async fn upload_profile_picture(
     // Gets file extension
     let temp_file_path = form.picture.file.path();
     let file_name = form.picture.file_name.unwrap();
-    let file_ext = Path::new(&file_name)
-        .extension()
-        .unwrap()
-        .to_str()
-        .unwrap();
-
+    let file_ext = Path::new(&file_name).extension().unwrap().to_str().unwrap();
 
     // Put file in profile pictures folder
     let file_name: String = uid.to_string() + "." + &file_ext;
@@ -226,9 +223,17 @@ pub async fn upload_profile_picture(
     file_path.push(&sanitize_filename::sanitize(&file_name));
 
     match std::fs::rename(temp_file_path, file_path) {
-        Ok(_) => HttpResponse::Ok().body("Yay"),
+        Ok(_) => {
+            if let Err(e) = ProfilePicture::insert_or_update(&pool, uid, file_name).await {
+                pretty_error!("Invalid upload", e.to_string(), error);
+
+                return HttpResponse::InternalServerError().json(error);
+            };
+
+            HttpResponse::Ok().body("Succesfully uploaded profile picture")
+        }
         Err(e) => {
-            pretty_error!("Invalid picture", e.to_string(), error);
+            pretty_error!("Invalid upload", e.to_string(), error);
 
             HttpResponse::BadRequest().json(error)
         }
