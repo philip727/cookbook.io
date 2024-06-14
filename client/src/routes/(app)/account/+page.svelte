@@ -1,6 +1,6 @@
 <script lang="ts">
     import { endpoint } from "$lib/api";
-    import { JWT_TOKEN_KEY } from "$lib/login";
+    import { JWT_TOKEN_KEY, user } from "$lib/login";
     import { HttpStatusCode } from "axios";
     import type { ResponseError } from "../../../components/ErrorBox";
     import ErrorBox from "../../../components/ErrorBox.svelte";
@@ -10,6 +10,12 @@
     import TextSinglelineInput from "../../../components/TextSinglelineInput.svelte";
     import type { PageData } from "./$types";
     import { goto } from "$app/navigation";
+    import type { PublicUserProfileDetails } from "$lib/profile";
+
+    let currentUser: PublicUserProfileDetails | null;
+    user.subscribe((value) => {
+        currentUser = value;
+    });
 
     // Retrieved account data
     export let data: PageData;
@@ -23,20 +29,6 @@
         pronouns: data.account?.pronouns,
         location: data.account?.location,
     };
-
-    // Compares the account data retrieved and the data to submit to see if they are different
-    function submittableDataIsUnchanged(): boolean {
-        if (!data.account) {
-            return false;
-        }
-
-        return (
-            data.account.display_name == changeData.display_name &&
-            data.account.bio == changeData.bio &&
-            data.account.pronouns == changeData.pronouns &&
-            data.account.location == changeData.location
-        );
-    }
 
     async function updateAccountDetails(
         event: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement },
@@ -106,7 +98,12 @@
 
             return;
         }
+
+        // Updates all the current pictures with the new one given if updated already
         let data = await response.text();
+        if (currentUser != null) {
+            user.set({ ...currentUser, picture: data });
+        }
     };
 
     let files: FileList;
@@ -167,7 +164,7 @@
             <div class="h-fit mt-2 flex flex-row">
                 <img
                     class="h-16 w-16 object-cover"
-                    src={endpoint(`/pfp/${data.account.picture}`)}
+                    src={endpoint(`/pfp/${currentUser?.picture}`)}
                     alt="User profile avatar"
                 />
                 <input

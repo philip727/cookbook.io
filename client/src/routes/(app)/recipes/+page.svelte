@@ -14,7 +14,7 @@
             <a href={`/recipes/${post.recipe.id}`}>
                 <div class="w-80 h-72">
                     <h1 class="text-xl font-bold">{post.recipe.title}</h1>
-                    <p class="text-sm">{post.recipe.description}</p>
+                    <p class="text-sm text-gray-700">{post.recipe.description}</p>
                 </div>
             </a>
         {/each}

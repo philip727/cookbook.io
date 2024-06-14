@@ -9,7 +9,6 @@ export type JWTClaims = {
 }
 
 export const user = writable<PublicUserProfileDetails | null>(null);
-
 export const requestJWTVerification = async (key: string, fetch: Function): Promise<JWTClaims | null> => {
     try {
         let bearer = "Bearer " + key;

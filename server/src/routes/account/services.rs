@@ -180,6 +180,32 @@ pub async fn update_account_details(
     HttpResponse::Ok().body("Account details succesfully updated")
 }
 
+#[actix_web::get("/pfp/{user_id}")]
+pub async fn get_profile_picture(
+    pool: Data<Pool<Postgres>>,
+    path: actix_web::web::Path<i32>,
+) -> impl Responder {
+    let id = path.into_inner();
+    let pfp = ProfilePicture::get_by_user_id(&pool, id).await;
+    if let Err(e) = pfp {
+        pretty_error!("Failed to get recipe".to_string(), e.to_string(), error);
+
+        return HttpResponse::NotFound().json(error);
+    };
+
+    let Some(pfp) = pfp.unwrap() else {
+        pretty_error!(
+            "No profile picture found".to_string(),
+            format!("Couldn't find recipe with the id: {}", id),
+            error
+        );
+
+        return HttpResponse::NotFound().json(error);
+    };
+
+    HttpResponse::Ok().json(pfp)
+}
+
 pub async fn upload_profile_picture(
     MultipartForm(form): MultipartForm<UploadPictureForm>,
     authorized: Authorized,
@@ -224,13 +250,13 @@ pub async fn upload_profile_picture(
 
     match std::fs::rename(temp_file_path, file_path) {
         Ok(_) => {
-            if let Err(e) = ProfilePicture::insert_or_update(&pool, uid, file_name).await {
+            if let Err(e) = ProfilePicture::insert_or_update(&pool, uid, file_name.clone()).await {
                 pretty_error!("Invalid upload", e.to_string(), error);
 
                 return HttpResponse::InternalServerError().json(error);
             };
 
-            HttpResponse::Ok().body("Succesfully uploaded profile picture")
+            HttpResponse::Ok().body(file_name)
         }
         Err(e) => {
             pretty_error!("Invalid upload", e.to_string(), error);

@@ -1,6 +1,8 @@
 use anyhow::anyhow;
-use sqlx::{Pool, Postgres};
+use serde::{Deserialize, Serialize};
+use sqlx::{prelude::FromRow, Pool, Postgres};
 
+#[derive(FromRow, Serialize, Deserialize)]
 pub struct ProfilePicture {
     pub user_id: i32,
     pub picture_path: Option<String>,
@@ -28,5 +30,31 @@ impl ProfilePicture {
         }
 
         Ok(())
+    }
+
+    pub async fn get_by_user_id(
+        pool: &Pool<Postgres>,
+        user_id: i32,
+    ) -> Result<Option<ProfilePicture>, anyhow::Error> {
+        let row = sqlx::query_as::<_, ProfilePicture>(
+            r#"SELECT * FROM profile_pictures WHERE user_id = $1"#,
+        )
+        .bind(user_id)
+        .fetch_one(pool)
+        .await;
+
+        if let Err(e) = row {
+            // If we dont find one, the query was still a success but we have no result
+            if let sqlx::Error::RowNotFound = e {
+                return Ok(None);
+            }
+
+            return Err(anyhow!(
+                "Failed to find profile_picture of user with id: {}",
+                user_id
+            ));
+        }
+
+        Ok(Some(row.unwrap()))
     }
 }

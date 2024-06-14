@@ -5,15 +5,12 @@ use std::{
 };
 
 use crate::{
-    database::models::{recipe::Recipe, user::User},
-    middleware::auth::AuthenticationExtension,
-    pretty_error,
-    recipe_io::RecipeFileJson,
-    routes::error::PrettyErrorResponse,
+    database::models::recipe::Recipe, middleware::auth::AuthenticationExtension, pretty_error,
+    recipe_io::RecipeFileJson, routes::error::PrettyErrorResponse,
 };
 use actix_web::{
     get,
-    web::{self, Data, Json},
+    web::{self, Data},
     HttpMessage, HttpRequest, HttpResponse, Responder,
 };
 use serde_json::json;
@@ -42,8 +39,12 @@ pub async fn get_recipes(
         pagination.offset = Some(0);
     }
 
-    let recipes =
-        Recipe::get_paginated_recipes_with_poster(&pool, pagination.offset.unwrap(), pagination.limit.unwrap()).await;
+    let recipes = Recipe::get_paginated_recipes_with_poster(
+        &pool,
+        pagination.offset.unwrap(),
+        pagination.limit.unwrap(),
+    )
+    .await;
 
     if let Err(e) = recipes {
         pretty_error!("Failed to get recipes".to_string(), e.to_string(), error);
@@ -80,10 +81,7 @@ pub async fn get_recipes(
 
         // Push value to vec
         let value = json!({
-            "poster": {
-                "uid": recipe.poster.uid,
-                "username": recipe.poster.username
-            },
+            "poster": recipe.poster,
             "recipe": {
                 "id": recipe.id,
                 "title": recipe_json.title,

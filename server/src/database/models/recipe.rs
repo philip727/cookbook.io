@@ -14,6 +14,8 @@ pub struct Recipe {
 pub struct Poster {
     pub uid: i32,
     pub username: String,
+    pub display_name: Option<String>,
+    pub picture: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -47,10 +49,13 @@ impl Recipe {
         limit: u32,
     ) -> Result<Vec<RecipeWithPoster>, anyhow::Error> {
         let rows = sqlx::query(
-            r#"SELECT u.uid, u.username, r.id, r.recipe_file_path, r.date_created FROM users u
-            RIGHT OUTER JOIN recipes r
-            ON u.uid = r.user_id 
-            ORDER BY r.id LIMIT $1 OFFSET $2;"#,
+            r#"SELECT u.uid, ud.display_name, u.username, pp.picture_path, r.id, r.recipe_file_path, r.date_created FROM users u
+                RIGHT OUTER JOIN recipes r
+                ON u.uid = r.user_id
+                LEFT OUTER JOIN user_details ud
+                ON u.uid = ud.user_id
+                LEFT OUTER JOIN profile_pictures pp ON u.uid = pp.user_id
+                ORDER BY r.id LIMIT 10 OFFSET 0;"#,
         )
         .bind(limit as i64)
         .bind(offset as i64)
@@ -65,6 +70,8 @@ impl Recipe {
                 poster: Poster {
                     uid: row.get("uid"),
                     username: row.get("username"),
+                    display_name: row.try_get("display_name").unwrap_or(None),
+                    picture: row.try_get("picture_path").unwrap_or(None),
                 },
                 id: row.get("id"),
                 recipe_file_path: row.get("recipe_file_path"),
