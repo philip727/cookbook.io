@@ -24,7 +24,6 @@
     let submitError: ResponseError | null = null;
     let submitSuccess: Success | null = null;
     let changeData = {
-        display_name: data.account?.display_name,
         bio: data.account?.bio,
         pronouns: data.account?.pronouns,
         location: data.account?.location,
@@ -44,8 +43,6 @@
 
         // Need to null empty values for serialization on server side
         let json = {
-            display_name:
-                changeData.display_name == "" ? null : changeData.display_name,
             bio: changeData.bio == "" ? null : changeData.bio,
             pronouns: changeData.pronouns == "" ? null : changeData.pronouns,
             location: changeData.location == "" ? null : changeData.location,
@@ -125,16 +122,6 @@
                     {data.account.username}
                 </p>
             </div>
-            <div class="">
-                <p class="text-sm tracking-wider font-semibold">display name</p>
-                <TextSinglelineInput
-                    bind:value={changeData.display_name}
-                    placeholder={data.account.display_name == null
-                        ? ""
-                        : data.account.display_name}
-                    extraClass="text-xs !py-px !pl-1"
-                />
-            </div>
             <div>
                 <p class="text-sm tracking-wider font-semibold">bio</p>
                 <TextMultilineInput
@@ -161,18 +148,37 @@
                     extraClass="text-xs !py-px !pl-1"
                 />
             </div>
-            <div class="h-fit mt-2 flex flex-row">
-                <img
-                    class="h-16 w-16 object-cover"
-                    src={endpoint(`/pfp/${currentUser?.picture}`)}
-                    alt="User profile avatar"
-                />
-                <input
-                    class="h-16"
-                    type="file"
-                    accept="image/png, image/jpeg"
-                    bind:files
-                />
+            <div>
+                <p class="text-sm tracking-wider font-semibold">profile picture</p>
+                <div class="h-fit flex flex-row mt-1">
+                    {#if currentUser?.picture != null}
+                        <img
+                            class="h-16 w-16 object-cover"
+                            src={endpoint(`/pfp/${currentUser?.picture}`)}
+                            alt="User profile avatar"
+                        />
+                    {:else}
+                        <img
+                            class="h-16 w-16 object-cover"
+                            src={`https://api.dicebear.com/8.x/avataaars-neutral/svg?seed=${currentUser?.username}`}
+                            alt="User profile avatar"
+                        />
+                    {/if}
+                    <label for="pfp-upload">
+                        <div
+                            class="cursor-pointer h-16 w-32 bg-[var(--yellow)] ml-4 hover:bg-[var(--dark-yellow)] duration-200 flex justify-center items-center"
+                        >
+                            <p class="text-xl font-bold tracking-widest">UPLOAD</p>
+                        </div>
+                    </label>
+                    <input
+                        id="pfp-upload"
+                        class="h-16 w-16 hidden"
+                        type="file"
+                        accept="image/png, image/jpeg"
+                        bind:files
+                    />
+                </div>
             </div>
             <!-- 
             {#if submittableDataIsUnchanged()}

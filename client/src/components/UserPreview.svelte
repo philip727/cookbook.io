@@ -7,13 +7,22 @@
 
 {#if user}
     <div class="flex justify-end items-center flex-row-reverse gap-4">
-        <img
-            crossorigin="anonymous"
-            src={endpoint(`/pfp/${user.picture}`)}
-            alt="User profile"
-            class="h-12 w-12 object-cover rounded-full"
-        />
-        <h1>
+        {#if user.picture != null}
+            <img
+                crossorigin="anonymous"
+                src={endpoint(`/pfp/${user.picture}`)}
+                alt="User profile"
+                class="h-12 w-12 object-cover rounded-full"
+            />
+        {:else}
+            <img
+                crossorigin="anonymous"
+                src={`https://api.dicebear.com/8.x/avataaars-neutral/svg?seed=${user.username}`}
+                alt="User profile"
+                class="h-12 w-12 object-cover rounded-full"
+            />
+        {/if}
+        <h1 class="text-lg font-bold">
             {user.username}
         </h1>
     </div>

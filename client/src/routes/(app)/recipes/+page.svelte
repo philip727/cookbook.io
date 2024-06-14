@@ -1,4 +1,5 @@
 <script lang="ts">
+    import UserPreview from "../../../components/UserPreview.svelte";
     import type { PageData } from "./$types";
 
     export let data: PageData;
@@ -13,8 +14,13 @@
         {#each data.recipes as post}
             <a href={`/recipes/${post.recipe.id}`}>
                 <div class="w-80 h-72">
-                    <h1 class="text-xl font-bold">{post.recipe.title}</h1>
-                    <p class="text-sm text-gray-700">{post.recipe.description}</p>
+                    <div>
+                        <h1 class="text-xl font-bold">{post.recipe.title}</h1>
+                        <p class="text-sm text-gray-700">{post.recipe.description}</p>
+                    </div>
+                    <div>
+                        <UserPreview user={post.poster} />
+                    </div>
                 </div>
             </a>
         {/each}

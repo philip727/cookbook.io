@@ -7,7 +7,6 @@ import { goto } from "$app/navigation";
 export type AccountInfo = {
     username: string,
     bio: string | null,
-    display_name: string | null,
     location: string | null,
     pronouns: string | null,
     picture: string | null,

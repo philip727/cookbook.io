@@ -24,7 +24,6 @@ create table recipes
 create table user_details
 (
     bio          varchar(255),
-    display_name varchar(30),
     pronouns     varchar(20),
     location     varchar(50),
     user_id      integer,
