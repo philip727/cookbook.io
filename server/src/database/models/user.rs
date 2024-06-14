@@ -34,7 +34,7 @@ impl User {
         // Returns failed insert with message
         if let Err(e) = rec {
             let err = e.to_string();
-            return Err(e).context(format!("Failed to insert user: {}", err));
+            return Err(anyhow!("Failed to insert user: {}", err));
         }
 
         // Returns the uid and username
@@ -81,7 +81,7 @@ impl User {
                 return Ok(None);
             }
 
-            return Err(e).context(format!("Failed to find user with id: {}", id));
+            return Err(anyhow!("Failed to find user with id: {}", id));
         }
 
         Ok(Some(row.unwrap()))
@@ -109,7 +109,7 @@ impl User {
                 return Ok(None);
             }
 
-            return Err(e).context(format!("Failed to find user with id: {}", id));
+            return Err(anyhow!("Failed to find user with id: {}", id));
         }
 
         let row = row.unwrap();
@@ -140,7 +140,7 @@ impl User {
                 return Ok(None);
             }
 
-            return Err(e).context(format!("Failed to find user with name: {}", name));
+            return Err(anyhow!("Failed to find user with name: {}", name));
         }
 
         let user = user.unwrap();
@@ -163,7 +163,7 @@ impl User {
                 return Ok(None);
             }
 
-            return Err(e).context(format!("Failed to find user with email: {}", email));
+            return Err(anyhow!("Failed to find user with email: {}", email));
         }
 
         let user = user.unwrap();
@@ -192,7 +192,7 @@ impl User {
                 return Ok(None);
             }
 
-            return Err(anyhow!(format!("Failed to find user with id: {}", id)));
+            return Err(anyhow!("Failed to find user with id: {}", id));
         }
 
         let user = rows.unwrap();
