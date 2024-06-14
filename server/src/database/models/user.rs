@@ -198,7 +198,6 @@ impl User {
         let user = rows.unwrap();
         let username: Option<String> = user.try_get("username").unwrap_or(None);
         let bio: Option<String> = user.try_get("bio").unwrap_or(None);
-        let display_name: Option<String> = user.try_get("display_name").unwrap_or(None);
         let pronouns: Option<String> = user.try_get("pronouns").unwrap_or(None);
         let location: Option<String> = user.try_get("location").unwrap_or(None);
         let picture_path: Option<String> = user.try_get("picture_path").unwrap_or(None);
@@ -206,7 +205,6 @@ impl User {
         let value = json!({
             "username": username,
             "bio": bio,
-            "display_name": display_name,
             "pronouns": pronouns,
             "location": location,
             "picture": picture_path

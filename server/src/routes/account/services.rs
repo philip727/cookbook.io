@@ -2,7 +2,6 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use actix_multipart::form::MultipartForm;
-use actix_web::dev::ResourcePath;
 use actix_web::web::{self, Data};
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, Responder};
 use serde_json::json;
@@ -12,62 +11,43 @@ use crate::database::models::profile_picture::ProfilePicture;
 use crate::database::models::user::User;
 use crate::database::models::user_details::UserDetails;
 use crate::extractors::auth::Authorized;
-use crate::helpers::{is_alnum_whitespace, is_alnum_whitespace_and_ex_chars};
+use crate::helpers::is_alnum_whitespace_and_ex_chars;
+use crate::pretty_error;
 use crate::routes::error::PrettyErrorResponse;
-use crate::{middleware::auth::AuthenticationExtension, pretty_error};
 
 use super::helpers::{UpdateUserDetailsPayload, UploadPictureForm};
 
-pub async fn verify_jwt(req: HttpRequest) -> impl Responder {
-    let extensions = req.extensions();
-    let auth = extensions.get::<AuthenticationExtension>();
-    // Need to make sure we can actually get the auth details from extension
-    let Some(auth) = auth else {
-        pretty_error!(
-            "Unauthorized".to_string(),
-            "Unable to get auth details from extension",
-            error
-        );
-        return HttpResponse::Unauthorized().json(error);
-    };
+pub async fn verify_jwt(authorized: Authorized) -> impl Responder {
+    if let Authorized::Failed(reason) = authorized {
+        pretty_error!("Unauthorized", reason, error);
 
-    let Ok(uid) = auth.uid.parse::<i32>() else {
-        pretty_error!(
-            "Unauthorized".to_string(),
-            "Invalid uid passed in auth",
-            error
-        );
-        return HttpResponse::InternalServerError().json(error);
+        return HttpResponse::Unauthorized().json(error);
+    }
+
+    let Authorized::Passed(uid, username) = authorized else {
+        panic!("Despite the if let authorized::failed, we still panicked");
     };
 
     let json = json!({
         "uid": uid,
-        "username": auth.username
+        "username": username
     });
 
     HttpResponse::Ok().json(json)
 }
 
-pub async fn get_account_details(pool: Data<Pool<Postgres>>, req: HttpRequest) -> impl Responder {
-    let extensions = req.extensions();
-    let auth = extensions.get::<AuthenticationExtension>();
-    // Need to make sure we can actually get the auth details from extension
-    let Some(auth) = auth else {
-        pretty_error!(
-            "Unauthorized".to_string(),
-            "Unable to get auth details from extension",
-            error
-        );
-        return HttpResponse::Unauthorized().json(error);
-    };
+pub async fn get_account_details(
+    pool: Data<Pool<Postgres>>,
+    authorized: Authorized,
+) -> impl Responder {
+    if let Authorized::Failed(reason) = authorized {
+        pretty_error!("Unauthorized", reason, error);
 
-    let Ok(uid) = auth.uid.parse::<i32>() else {
-        pretty_error!(
-            "Unauthorized".to_string(),
-            "Invalid uid passed in auth",
-            error
-        );
-        return HttpResponse::InternalServerError().json(error);
+        return HttpResponse::Unauthorized().json(error);
+    }
+
+    let Authorized::Passed(uid, _username) = authorized else {
+        panic!("Despite the if let authorized::failed, we still panicked");
     };
 
     let user = User::get_details(&pool, uid).await;
@@ -89,30 +69,18 @@ pub async fn get_account_details(pool: Data<Pool<Postgres>>, req: HttpRequest) -
 }
 
 pub async fn update_account_details(
-    req: HttpRequest,
     payload: web::Json<UpdateUserDetailsPayload>,
     pool: Data<Pool<Postgres>>,
+    authorized: Authorized,
 ) -> impl Responder {
-    let extensions = req.extensions();
-    let auth = extensions.get::<AuthenticationExtension>();
+    if let Authorized::Failed(reason) = authorized {
+        pretty_error!("Unauthorized", reason, error);
 
-    // Need to make sure we can actually get the auth details from extension
-    let Some(auth) = auth else {
-        pretty_error!(
-            "Unauthorized".to_string(),
-            "Unable to get auth details from extension",
-            error
-        );
         return HttpResponse::Unauthorized().json(error);
-    };
+    }
 
-    let Ok(uid) = auth.uid.parse::<i32>() else {
-        pretty_error!(
-            "Unauthorized".to_string(),
-            "Invalid uid passed in auth",
-            error
-        );
-        return HttpResponse::InternalServerError().json(error);
+    let Authorized::Passed(uid, _username) = authorized else {
+        panic!("Despite the if let authorized::failed, we still panicked");
     };
 
     if let Some(pronouns) = &payload.pronouns {
@@ -137,17 +105,6 @@ pub async fn update_account_details(
         }
     }
 
-    if let Some(display_name) = &payload.display_name {
-        if !is_alnum_whitespace(display_name) {
-            pretty_error!(
-                "This display name is invalid".to_string(),
-                "Please only use alphanumerical characters",
-                error
-            );
-            return HttpResponse::BadRequest().json(error);
-        }
-    }
-
     if let Some(location) = &payload.location {
         if !is_alnum_whitespace_and_ex_chars(location) {
             pretty_error!(
@@ -162,7 +119,6 @@ pub async fn update_account_details(
     if let Err(e) = UserDetails::insert_or_create(
         &pool,
         &payload.bio,
-        &payload.display_name,
         &payload.pronouns,
         &payload.location,
         uid,
@@ -221,7 +177,6 @@ pub async fn upload_profile_picture(
         panic!("Despite the if let authorized::failed, we still panicked");
     };
 
-    println!("{:?}", form.picture.content_type);
     let Some(mime_type) = &form.picture.content_type else {
         pretty_error!("Invalid upload", "Couldn't get mime type", error);
 
