@@ -1,15 +1,16 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use actix_multipart::form::MultipartForm;
+use actix_web::dev::ResourcePath;
 use actix_web::web::{self, Data};
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, Responder};
-use mime::Mime;
 use serde_json::json;
 use sqlx::{Pool, Postgres};
 
 use crate::database::models::user::User;
 use crate::database::models::user_details::UserDetails;
+use crate::extractors::auth::Authorized;
 use crate::helpers::{is_alnum_whitespace, is_alnum_whitespace_and_ex_chars};
 use crate::routes::error::PrettyErrorResponse;
 use crate::{middleware::auth::AuthenticationExtension, pretty_error};
@@ -180,21 +181,28 @@ pub async fn update_account_details(
 
 pub async fn upload_profile_picture(
     MultipartForm(form): MultipartForm<UploadPictureForm>,
+    authorized: Authorized,
 ) -> impl Responder {
+    if let Authorized::Failed(reason) = authorized {
+        pretty_error!("Unauthorized", reason, error);
+
+        return HttpResponse::Unauthorized().json(error);
+    }
+
+    let Authorized::Passed(uid, _username) = authorized else {
+        panic!("Despite the if let authorized::failed, we still panicked");
+    };
+
     println!("{:?}", form.picture.content_type);
     let Some(mime_type) = &form.picture.content_type else {
-        pretty_error!(
-            "Invalid picture",
-            "Couldn't get mime type",
-            error
-        );
+        pretty_error!("Invalid upload", "Couldn't get mime type", error);
 
         return HttpResponse::BadRequest().json(error);
     };
 
-    if mime_type != &"image/jpeg" && mime_type != &"image/png"  {
+    if mime_type != &"image/jpeg" && mime_type != &"image/png" {
         pretty_error!(
-            "Invalid picture",
+            "Invalid upload",
             "An invalid mime type was passed, only jpeg/png",
             error
         );
@@ -202,14 +210,18 @@ pub async fn upload_profile_picture(
         return HttpResponse::BadRequest().json(error);
     }
 
+    // Gets file extension
     let temp_file_path = form.picture.file.path();
-    let file_name: &str = form
-        .picture
-        .file_name
-        .as_ref()
-        .map(|m| m.as_ref())
-        .unwrap_or("null");
+    let file_name = form.picture.file_name.unwrap();
+    let file_ext = Path::new(&file_name)
+        .extension()
+        .unwrap()
+        .to_str()
+        .unwrap();
 
+
+    // Put file in profile pictures folder
+    let file_name: String = uid.to_string() + "." + &file_ext;
     let mut file_path = PathBuf::from_str("./profile_pictures").unwrap();
     file_path.push(&sanitize_filename::sanitize(&file_name));
 

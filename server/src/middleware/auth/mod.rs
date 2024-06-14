@@ -101,20 +101,9 @@ where
 
         // Insert uid and username into the request extensions
         let (uid, username) = try_jwt.unwrap();
-        let Ok(uid_int) = uid.parse::<i32>() else {
-            let res = HttpResponse::with_body(
-                StatusCode::UNAUTHORIZED,
-                "Failed to parse uid passed in bearer token",
-            );
-            return Either::Right(ok(req
-                .into_response(res)
-                .map_into_boxed_body()
-                .map_into_right_body()));
-        };
 
         let extension = AuthenticationExtension { uid, username };
         req.extensions_mut().insert(extension);
-
         Either::Left(AuthenticationFuture {
             fut: self.service.call(req),
             _phantom: PhantomData,
