@@ -4,6 +4,7 @@
     import TextMultilineInput from "../../../../components/TextMultilineInput.svelte";
     import TextSinglelineInput from "../../../../components/TextSinglelineInput.svelte";
     import { Measurement, type Ingredient } from "./helpers";
+    import deleteBin from "$lib/images/recycle-bin.svg";
 
     let ingredients: Array<Ingredient> = [];
 
@@ -37,8 +38,8 @@
         <div>
             <p class="text-sm tracking-wider font-semibold">ingredients</p>
             <div class="mt-1">
-                {#each ingredients as ingredient}
-                    <div class="w-full bg-gray-100 mb-2">
+                {#each ingredients as ingredient, i}
+                    <div class="w-full bg-gray-100 mb-2 flex flex-row">
                         <div class="h-fit w-1/2 p-1">
                             <TextSinglelineInput
                                 bind:value={ingredient.ingredient}
@@ -56,6 +57,22 @@
                                     extraClass="!h-full"
                                 />
                             </div>
+                        </div>
+                        <div class="w-1/2 flex items-center justify-end pr-2">
+                            <button
+                                on:click={() => {
+                                    ingredients.splice(i, 1);
+                                    ingredients = ingredients;
+                                }}
+                                class="cursor-pointer h-12 w-12 bg-[var(--yellow)] ml-4 hover:bg-[var(--dark-yellow)] duration-200 flex justify-center items-center"
+                                type="button"
+                            >
+                                <img
+                                    class="h-10 w-10"
+                                    src={deleteBin}
+                                    alt="Delete button"
+                                />
+                            </button>
                         </div>
                     </div>
                 {/each}
