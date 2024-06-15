@@ -11,6 +11,8 @@
     import type { PageData } from "./$types";
     import { goto } from "$app/navigation";
     import type { PublicUserProfileDetails } from "$lib/profile";
+    import uploadArrow from "$lib/images/upload-arrow.svg";
+    import deleteBin from "$lib/images/recycle-bin.svg";
 
     let currentUser: PublicUserProfileDetails | null;
     user.subscribe((value) => {
@@ -70,6 +72,35 @@
             title: "Updated",
             description: "Successfully updated your account details",
         };
+    }
+
+    const deleteProfilePicture = async () => {
+        let key = window.localStorage[JWT_TOKEN_KEY];
+        if (key == null) {
+            return;
+        }
+
+        let bearer = "Bearer " + key;
+        const response = await window.fetch(endpoint("/account/delete_pfp"), {
+            method: "GET",
+            headers: {
+                Authorization: bearer,
+            },
+        });
+
+        if (!response.ok) {
+            if (response.status == HttpStatusCode.Unauthorized) {
+                window.localStorage[JWT_TOKEN_KEY] = null;
+                goto("/");
+            }
+
+            return;
+        }
+
+        // Updates all the current pictures with the new one given if updated already
+        if (currentUser != null) {
+            user.set({ ...currentUser, picture: null });
+        }
     }
 
     const uploadProfilePicture = async (formData: FormData) => {
@@ -149,7 +180,9 @@
                 />
             </div>
             <div>
-                <p class="text-sm tracking-wider font-semibold">profile picture</p>
+                <p class="text-sm tracking-wider font-semibold">
+                    profile picture
+                </p>
                 <div class="h-fit flex flex-row mt-1">
                     {#if currentUser?.picture != null}
                         <img
@@ -160,15 +193,19 @@
                     {:else}
                         <img
                             class="h-16 w-16 object-cover"
-                            src={`https://api.dicebear.com/8.x/avataaars-neutral/svg?seed=${currentUser?.username}`}
+                            src={`https://api.dicebear.com/8.x/shapes/svg?seed=${currentUser?.username}`}
                             alt="User profile avatar"
                         />
                     {/if}
                     <label for="pfp-upload">
                         <div
-                            class="cursor-pointer h-16 w-32 bg-[var(--yellow)] ml-4 hover:bg-[var(--dark-yellow)] duration-200 flex justify-center items-center"
+                            class="cursor-pointer h-16 w-16 bg-[var(--yellow)] ml-4 hover:bg-[var(--dark-yellow)] duration-200 flex justify-center items-center"
                         >
-                            <p class="text-xl font-bold tracking-widest">UPLOAD</p>
+                            <img
+                                class="h-8 w-8"
+                                src={uploadArrow}
+                                alt="Upload button"
+                            />
                         </div>
                     </label>
                     <input
@@ -178,6 +215,19 @@
                         accept="image/png, image/jpeg"
                         bind:files
                     />
+                    {#if currentUser?.picture != null}
+                        <button
+                            class="cursor-pointer h-16 w-16 bg-[var(--yellow)] ml-4 hover:bg-[var(--dark-yellow)] duration-200 flex justify-center items-center"
+                            on:click={deleteProfilePicture}
+                            type="button"
+                        >
+                            <img
+                                class="h-10 w-10"
+                                src={deleteBin}
+                                alt="Delete button"
+                            />
+                        </button>
+                    {/if}
                 </div>
             </div>
             <!-- 

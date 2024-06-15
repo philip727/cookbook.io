@@ -14,6 +14,7 @@ use crate::extractors::auth::Authorized;
 use crate::helpers::is_alnum_whitespace_and_ex_chars;
 use crate::pretty_error;
 use crate::routes::error::PrettyErrorResponse;
+use crate::static_files::helpers::rename_temp_file;
 
 use super::helpers::{UpdateUserDetailsPayload, UploadPictureForm};
 
@@ -144,7 +145,7 @@ pub async fn get_profile_picture(
     let id = path.into_inner();
     let pfp = ProfilePicture::get_by_user_id(&pool, id).await;
     if let Err(e) = pfp {
-        pretty_error!("Failed to get recipe".to_string(), e.to_string(), error);
+        pretty_error!("No profile picture found".to_string(), e.to_string(), error);
 
         return HttpResponse::NotFound().json(error);
     };
@@ -152,7 +153,7 @@ pub async fn get_profile_picture(
     let Some(pfp) = pfp.unwrap() else {
         pretty_error!(
             "No profile picture found".to_string(),
-            format!("Couldn't find recipe with the id: {}", id),
+            format!("Couldn't find profile picture from the user id: {}", id),
             error
         );
 
@@ -160,6 +161,31 @@ pub async fn get_profile_picture(
     };
 
     HttpResponse::Ok().json(pfp)
+}
+
+pub async fn delete_profile_picture(
+    authorized: Authorized,
+    pool: Data<Pool<Postgres>>,
+) -> impl Responder {
+    if let Authorized::Failed(reason) = authorized {
+        pretty_error!("Unauthorized", reason, error);
+
+        return HttpResponse::Unauthorized().json(error);
+    }
+
+    let Authorized::Passed(uid, _username) = authorized else {
+        // Should never pass
+        panic!("Despite the if let authorized::failed, we still panicked");
+    };
+
+    match ProfilePicture::delete_by_user_id(&pool, uid).await {
+        Ok(..) => HttpResponse::Ok().body("Succesfully deleted profile picture"),
+        Err(e) => {
+            pretty_error!("Failed to delete profile picture", e.to_string(), error);
+
+            HttpResponse::InternalServerError().json(error)
+        }
+    }
 }
 
 pub async fn upload_profile_picture(
@@ -193,18 +219,9 @@ pub async fn upload_profile_picture(
         return HttpResponse::BadRequest().json(error);
     }
 
-    // Gets file extension
-    let temp_file_path = form.picture.file.path();
-    let file_name = form.picture.file_name.unwrap();
-    let file_ext = Path::new(&file_name).extension().unwrap().to_str().unwrap();
-
-    // Put file in profile pictures folder
-    let file_name: String = uid.to_string() + "." + &file_ext;
-    let mut file_path = PathBuf::from_str("./profile_pictures").unwrap();
-    file_path.push(&sanitize_filename::sanitize(&file_name));
-
-    match std::fs::rename(temp_file_path, file_path) {
-        Ok(_) => {
+    // Saves the temp file
+    match rename_temp_file(form.picture, "./profile_pictures", &uid.to_string()) {
+        Ok(file_name) => {
             if let Err(e) = ProfilePicture::insert_or_update(&pool, uid, file_name.clone()).await {
                 pretty_error!("Invalid upload", e.to_string(), error);
 
@@ -217,6 +234,7 @@ pub async fn upload_profile_picture(
             pretty_error!("Invalid upload", e.to_string(), error);
 
             HttpResponse::BadRequest().json(error)
+
         }
     }
 }

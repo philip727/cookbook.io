@@ -57,4 +57,25 @@ impl ProfilePicture {
 
         Ok(Some(row.unwrap()))
     }
+
+    pub async fn delete_by_user_id(
+        pool: &Pool<Postgres>,
+        user_id: i32,
+    ) -> Result<(), anyhow::Error> {
+        let rec = sqlx::query(r#"DELETE FROM profile_pictures WHERE user_id = $1"#)
+            .bind(user_id)
+            .execute(pool)
+            .await;
+
+        if let Err(e) = rec {
+            // If we dont find one, the query was still a success but we have no result
+            return Err(anyhow!(
+                "Failed to delete profile_picture of user with id: {} ({})",
+                user_id,
+                e.to_string()
+            ));
+        }
+
+        Ok(())
+    }
 }
