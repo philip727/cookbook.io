@@ -24,6 +24,7 @@ pub struct RecipeWithPoster {
     pub id: i32,
     pub recipe_file_path: String,
     pub date_created: chrono::DateTime<Utc>,
+    pub thumbnail_path: Option<String>,
 }
 
 impl Recipe {
@@ -48,13 +49,17 @@ impl Recipe {
         limit: u32,
     ) -> Result<Vec<RecipeWithPoster>, anyhow::Error> {
         let rows = sqlx::query(
-            r#"SELECT u.uid, u.username, pp.picture_path, r.id, r.recipe_file_path, r.date_created FROM users u
-                RIGHT OUTER JOIN recipes r
+            r#"
+            SELECT u.uid, u.username, pp.picture_path, r.id, r.recipe_file_path, r.date_created, rt.thumbnail_path FROM users u
+            RIGHT OUTER JOIN recipes r
                 ON u.uid = r.user_id
-                LEFT OUTER JOIN user_details ud
+            LEFT OUTER JOIN user_details ud
                 ON u.uid = ud.user_id
-                LEFT OUTER JOIN profile_pictures pp ON u.uid = pp.user_id
-                ORDER BY r.id LIMIT 10 OFFSET 0;"#,
+            LEFT OUTER JOIN profile_pictures pp
+                ON u.uid = pp.user_id
+            LEFT OUTER JOIN recipe_thumbnails rt
+                ON rt.recipe_id = r.id
+                    ORDER BY r.id LIMIT 10 OFFSET 0;"#,
         )
         .bind(limit as i64)
         .bind(offset as i64)
@@ -74,6 +79,7 @@ impl Recipe {
                 id: row.get("id"),
                 recipe_file_path: row.get("recipe_file_path"),
                 date_created: row.get("date_created"),
+                thumbnail_path: row.try_get("thumbnail_path").unwrap_or(None),
             })
             .collect();
 
