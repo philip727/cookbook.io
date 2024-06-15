@@ -17,7 +17,7 @@
         {:else}
             <img
                 crossorigin="anonymous"
-                src={`https://api.dicebear.com/8.x/avataaars-neutral/svg?seed=${user.username}`}
+                src={`https://api.dicebear.com/8.x/shapes/svg?seed=${user.username}`}
                 alt="User profile"
                 class="h-12 w-12 object-cover rounded-full"
             />

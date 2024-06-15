@@ -10,7 +10,8 @@ use dotenv::dotenv;
 use middleware::auth::Authentication;
 use routes::{
     account::services::{
-        get_account_details, update_account_details, upload_profile_picture, verify_jwt,
+        delete_profile_picture, get_account_details, update_account_details,
+        upload_profile_picture, verify_jwt,
     },
     recipes::services::{create_recipe, get_recipe, get_recipes},
     users::services::{get_all_users, get_user_by_id, login_user, register_user},
@@ -19,8 +20,8 @@ use sqlx::postgres::PgPoolOptions;
 
 pub mod auth;
 pub mod database;
-pub mod helpers;
 pub mod extractors;
+pub mod helpers;
 pub mod middleware;
 pub mod recipe_io;
 pub mod routes;
@@ -71,6 +72,10 @@ async fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/upload_pfp")
                                     .route(web::post().to(upload_profile_picture)),
+                            )
+                            .service(
+                                web::resource("/delete_pfp")
+                                    .route(web::get().to(delete_profile_picture)),
                             ),
                     )
                     .service(
