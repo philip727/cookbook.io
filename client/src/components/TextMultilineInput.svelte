@@ -1,7 +1,7 @@
 <script lang="ts">
     export let name: string | undefined = undefined;
     export let placeholder = "...";
-    export let extraClass = "text";
+    export let extraClass = "";
     export let value: any = undefined;
 </script>
 
