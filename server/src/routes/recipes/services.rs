@@ -82,11 +82,10 @@ pub async fn get_recipes(
         // Push value to vec
         let value = json!({
             "poster": recipe.poster,
-            "recipe": {
-                "id": recipe.id,
-                "title": recipe_json.title,
-                "description": recipe_json.description
-            }
+            "id": recipe.id,
+            "title": recipe_json.title,
+            "description": recipe_json.description,
+            "thumbnail": recipe.thumbnail_path,
         });
 
         json_values.push(value);
