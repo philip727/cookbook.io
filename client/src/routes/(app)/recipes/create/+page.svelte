@@ -5,7 +5,13 @@
     import { Measurement, type Ingredient } from "./helpers";
     import uploadArrow from "$lib/images/upload-arrow.svg";
     import TextMultilineInput from "../../../../components/TextMultilineInput.svelte";
+    import { JWT_TOKEN_KEY, getBearer } from "$lib/login";
+    import { endpoint } from "$lib/api";
+    import { goto } from "$app/navigation";
+    import { HttpStatusCode } from "axios";
 
+    let title: string | null = null;
+    let description: string | null = null;
     let ingredients: Array<Ingredient> = [];
     let steps: Array<string> = [];
     let files: FileList;
@@ -25,13 +31,60 @@
 
         steps = steps;
     };
+
+    const uploadRecipe = async () => {
+        let form = new FormData();
+
+        if (files && files.item) {
+            form.append("thumbnail", files.item(0) as File);
+        }
+
+        let orderedSteps = []
+        for (let i = 0; i < steps.length; i++) {
+            const step = steps[i];
+
+            orderedSteps.push({ order: i, step_details: step });
+        }
+
+        let body = {
+            title: title,
+            description: description,
+            ingredients: ingredients,
+            steps: orderedSteps,
+        }
+
+        form.append("recipe", JSON.stringify(body));
+        let bearer = getBearer();
+        if (!bearer) {
+            return;
+        }
+
+        const response = await window.fetch(endpoint("/recipes/create"), {
+            method: "POST",
+            body: form,
+            headers: {
+                Authorization: bearer,
+            }
+        })
+
+        if (!response.ok) {
+            if (response.status == HttpStatusCode.Unauthorized) {
+                window.localStorage.removeItem(JWT_TOKEN_KEY);
+                goto("/");
+            }
+
+            return;
+        }
+
+    }
 </script>
 
 <section class="flex w-full h-fit justify-center items-center">
-    <form class="shadow-one flex flex-col gap-2 w-[580px] mt-20 p-4 bg-white">
+    <form on:submit={uploadRecipe} class="shadow-one flex flex-col gap-2 w-[580px] mt-20 p-4 bg-white">
         <article>
             <p class="text-sm tracking-wider font-semibold">title</p>
             <TextSinglelineInput
+                bind:value={title}
                 placeholder={"Give your splendid recipe a title!"}
                 extraClass="text-xs !py-px !pl-1"
             />
@@ -39,6 +92,7 @@
         <article>
             <p class="text-sm tracking-wider font-semibold">description</p>
             <TextSinglelineInput
+                bind:value={description}
                 placeholder={"Tell us a little about this dish"}
                 extraClass="text-xs !py-px !pl-1"
             />
@@ -189,5 +243,11 @@
                 bind:files
             />
         </article>
+        <button
+            class="w-fit px-3 py-1 bg-[var(--yellow)] hover:bg-[var(--dark-yellow)] duration-200 flex flex-row gap-2 items-center mt-1"
+            type="submit"
+        >
+            <p class="text-base font-semibold">SAVE CHANGES</p>
+        </button>
     </form>
 </section>
