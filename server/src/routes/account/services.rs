@@ -90,39 +90,10 @@ pub async fn update_account_details(
 
         return HttpResponse::BadRequest().json(error);
     }
+
     let payload = payload.unwrap();
-
-    if let Some(pronouns) = &payload.pronouns {
-        if !UserDetails::is_pronoun(pronouns) {
-            pretty_error!(
-                "This pronoun is invalid".to_string(),
-                "Please follow the rule of 'pronoun1/pronoun2'",
-                error
-            );
-            return HttpResponse::BadRequest().json(error);
-        }
-    }
-
-    if let Some(bio) = &payload.bio {
-        if !is_alnum_whitespace_and_ex_chars(bio) {
-            pretty_error!(
-                "This bio is invalid".to_string(),
-                "Please only use alphanumerical characters",
-                error
-            );
-            return HttpResponse::BadRequest().json(error);
-        }
-    }
-
-    if let Some(location) = &payload.location {
-        if !is_alnum_whitespace_and_ex_chars(location) {
-            pretty_error!(
-                "This location name is invalid".to_string(),
-                "Please only use alphanumerical characters",
-                error
-            );
-            return HttpResponse::BadRequest().json(error);
-        }
+    if let Err(e) = payload.verify() {
+        return e;
     }
 
     if let Err(e) = UserDetails::insert_or_create(
