@@ -19,5 +19,5 @@ export enum Measurement {
     Ounce = "Ounce",
     Celsius = "Celsius",
     Fahrenheit = "Fahrenheit",
-    Of = "Of",
+    Piece = "Piece",
 }

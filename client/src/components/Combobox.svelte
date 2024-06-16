@@ -38,12 +38,16 @@
             " " +
             extraClass}
         on:click={() => (open = !open)}
+        type="button"
     >
         <p class="text-xs font-semibold">{selectedValue}</p>
         <p class="ml-8 text-xs font-semibold">{open ? "-" : ">"}</p>
     </button>
     {#if open}
-        <div id={`cb-${identifier}`} class="absolute top-full left-0 w-full z-50">
+        <div
+            id={`cb-${identifier}`}
+            class="absolute top-full left-0 w-full z-50"
+        >
             {#each values as value}
                 <button
                     class={"w-full px-3 py-px bg-[var(--yellow)] hover:bg-[var(--dark-yellow)] duration-200 flex flex-row items-center z-50" +
@@ -53,6 +57,7 @@
                         open = false;
                         selectedValue = value;
                     }}
+                    type="button"
                 >
                     <p class="text-xs font-semibold">{value}</p>
                 </button>

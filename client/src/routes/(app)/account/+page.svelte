@@ -21,6 +21,7 @@
 
     // Retrieved account data
     export let data: PageData;
+    let files: FileList;
 
     // The data we submit/change
     let submitError: ResponseError | null = null;
@@ -134,7 +135,6 @@
         }
     };
 
-    let files: FileList;
     // Submit as soon as it changes
     $: if (files && files.item(0)) {
         // Uploads the profile picture

@@ -71,7 +71,7 @@ pub enum Measurement {
     Ounce,
     Celsius,
     Fahrenheit,
-    Of,
+    Piece,
 }
 
 #[derive(Deserialize, Serialize)]
