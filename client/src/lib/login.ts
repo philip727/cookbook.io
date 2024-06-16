@@ -9,6 +9,16 @@ export type JWTClaims = {
 }
 
 export const user = writable<PublicUserProfileDetails | null>(null);
+
+export const getBearer = (): string | null => {
+    let key = window.localStorage.getItem(JWT_TOKEN_KEY);
+    if (key == null) {
+        return null;
+    }
+
+    return "Bearer " + key;
+}
+
 export const requestJWTVerification = async (key: string, fetch: Function): Promise<JWTClaims | null> => {
     try {
         let bearer = "Bearer " + key;
@@ -23,6 +33,7 @@ export const requestJWTVerification = async (key: string, fetch: Function): Prom
 
         if (!response.ok) {
             //let _ = await response.text();
+            window.localStorage.removeItem(JWT_TOKEN_KEY);
             return null;
         }
 

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { endpoint } from "$lib/api";
-    import { JWT_TOKEN_KEY, user } from "$lib/login";
+    import { JWT_TOKEN_KEY, getBearer, user } from "$lib/login";
     import { HttpStatusCode } from "axios";
     import type { ResponseError } from "../../../components/ErrorBox";
     import ErrorBox from "../../../components/ErrorBox.svelte";
@@ -105,12 +105,11 @@
     }
 
     const uploadProfilePicture = async (formData: FormData) => {
-        let key = window.localStorage[JWT_TOKEN_KEY];
-        if (key == null) {
+        let bearer = getBearer();
+        if (!bearer) {
             return;
         }
 
-        let bearer = "Bearer " + key;
         const response = await window.fetch(endpoint("/account/upload_pfp"), {
             method: "POST",
             body: formData,
