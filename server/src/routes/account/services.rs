@@ -70,7 +70,7 @@ pub async fn get_account_details(
 }
 
 pub async fn update_account_details(
-    payload: web::Json<UpdateUserDetailsPayload>,
+    MultipartForm(form): MultipartForm<UploadPictureForm>,
     pool: Data<Pool<Postgres>>,
     authorized: Authorized,
 ) -> impl Responder {
@@ -83,6 +83,14 @@ pub async fn update_account_details(
     let Authorized::Passed(uid, _username) = authorized else {
         panic!("Despite the if let authorized::failed, we still panicked");
     };
+
+    let payload = serde_json::from_str::<UpdateUserDetailsPayload>(&form.details.to_string());
+    if let Err(err) = payload {
+        pretty_error!("Invalid details", err.to_string(), error);
+
+        return HttpResponse::BadRequest().json(error);
+    }
+    let payload = payload.unwrap();
 
     if let Some(pronouns) = &payload.pronouns {
         if !UserDetails::is_pronoun(pronouns) {
@@ -134,7 +142,28 @@ pub async fn update_account_details(
         return HttpResponse::InternalServerError().json(error);
     };
 
-    HttpResponse::Ok().body("Account details succesfully updated")
+    if let Some(picture) = form.picture {
+        match rename_temp_file(picture, "./profile_pictures", &uid.to_string()) {
+            Ok(file_name) => {
+                if let Err(e) =
+                    ProfilePicture::insert_or_update(&pool, uid, file_name.clone()).await
+                {
+                    pretty_error!("Invalid profile picture", e.to_string(), error);
+
+                    return HttpResponse::InternalServerError().json(error);
+                };
+
+                HttpResponse::Ok().body("Account details succesfully updated")
+            }
+            Err(e) => {
+                pretty_error!("Invalid upload", e.to_string(), error);
+
+                HttpResponse::BadRequest().json(error)
+            }
+        }
+    } else {
+        HttpResponse::Ok().body("Account details succesfully updated")
+    }
 }
 
 #[actix_web::get("/pfp/{user_id}")]
@@ -184,57 +213,6 @@ pub async fn delete_profile_picture(
             pretty_error!("Failed to delete profile picture", e.to_string(), error);
 
             HttpResponse::InternalServerError().json(error)
-        }
-    }
-}
-
-pub async fn upload_profile_picture(
-    MultipartForm(form): MultipartForm<UploadPictureForm>,
-    authorized: Authorized,
-    pool: Data<Pool<Postgres>>,
-) -> impl Responder {
-    if let Authorized::Failed(reason) = authorized {
-        pretty_error!("Unauthorized", reason, error);
-
-        return HttpResponse::Unauthorized().json(error);
-    }
-
-    let Authorized::Passed(uid, _username) = authorized else {
-        panic!("Despite the if let authorized::failed, we still panicked");
-    };
-
-    let Some(mime_type) = &form.picture.content_type else {
-        pretty_error!("Invalid upload", "Couldn't get mime type", error);
-
-        return HttpResponse::BadRequest().json(error);
-    };
-
-    if mime_type != &"image/jpeg" && mime_type != &"image/png" {
-        pretty_error!(
-            "Invalid upload",
-            "An invalid mime type was passed, only jpeg/png",
-            error
-        );
-
-        return HttpResponse::BadRequest().json(error);
-    }
-
-    // Saves the temp file
-    match rename_temp_file(form.picture, "./profile_pictures", &uid.to_string()) {
-        Ok(file_name) => {
-            if let Err(e) = ProfilePicture::insert_or_update(&pool, uid, file_name.clone()).await {
-                pretty_error!("Invalid upload", e.to_string(), error);
-
-                return HttpResponse::InternalServerError().json(error);
-            };
-
-            HttpResponse::Ok().body(file_name)
-        }
-        Err(e) => {
-            pretty_error!("Invalid upload", e.to_string(), error);
-
-            HttpResponse::BadRequest().json(error)
-
         }
     }
 }

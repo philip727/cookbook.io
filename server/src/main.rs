@@ -9,10 +9,7 @@ use actix_web::{
 use dotenv::dotenv;
 use middleware::auth::Authentication;
 use routes::{
-    account::services::{
-        delete_profile_picture, get_account_details, update_account_details,
-        upload_profile_picture, verify_jwt,
-    },
+    account::services::*,
     recipes::services::{create_recipe, get_recipe, get_recipes},
     users::services::{get_all_users, get_user_by_id, login_user, register_user},
 };
@@ -68,10 +65,6 @@ async fn main() -> std::io::Result<()> {
                             .service(
                                 web::resource("/update_details")
                                     .route(web::post().to(update_account_details)),
-                            )
-                            .service(
-                                web::resource("/upload_pfp")
-                                    .route(web::post().to(upload_profile_picture)),
                             )
                             .service(
                                 web::resource("/delete_pfp")

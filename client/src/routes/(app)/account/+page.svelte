@@ -37,12 +37,10 @@
     ) {
         event.preventDefault();
 
-        let key = window.localStorage[JWT_TOKEN_KEY];
-        if (key == null) {
+        let bearer = getBearer();
+        if (!bearer) {
             return;
         }
-
-        let bearer = "Bearer " + key;
 
         // Need to null empty values for serialization on server side
         let json = {
@@ -51,13 +49,19 @@
             location: changeData.location == "" ? null : changeData.location,
         };
 
+        const formData = new FormData();
+        if (files && files.item(0)) {
+            formData.append("picture", files.item(0) as File);
+        }
+
+        formData.append("details", JSON.stringify(json));
+
         let response = await window.fetch(endpoint("/account/update_details"), {
             method: "POST",
             headers: {
                 Authorization: bearer,
-                "Content-Type": "application/json",
             },
-            body: JSON.stringify(json),
+            body: formData,
         });
 
         if (!response.ok) {
@@ -76,12 +80,11 @@
     }
 
     const deleteProfilePicture = async () => {
-        let key = window.localStorage[JWT_TOKEN_KEY];
-        if (key == null) {
+        let bearer = getBearer();
+        if (!bearer) {
             return;
         }
 
-        let bearer = "Bearer " + key;
         const response = await window.fetch(endpoint("/account/delete_pfp"), {
             method: "GET",
             headers: {
@@ -102,44 +105,6 @@
         if (currentUser != null) {
             user.set({ ...currentUser, picture: null });
         }
-    }
-
-    const uploadProfilePicture = async (formData: FormData) => {
-        let bearer = getBearer();
-        if (!bearer) {
-            return;
-        }
-
-        const response = await window.fetch(endpoint("/account/upload_pfp"), {
-            method: "POST",
-            body: formData,
-            headers: {
-                Authorization: bearer,
-            },
-        });
-
-        if (!response.ok) {
-            if (response.status == HttpStatusCode.Unauthorized) {
-                window.localStorage[JWT_TOKEN_KEY] = null;
-                goto("/");
-            }
-
-            return;
-        }
-
-        // Updates all the current pictures with the new one given if updated already
-        let data = await response.text();
-        if (currentUser != null) {
-            user.set({ ...currentUser, picture: data });
-        }
-    };
-
-    // Submit as soon as it changes
-    $: if (files && files.item(0)) {
-        // Uploads the profile picture
-        const formData = new FormData();
-        formData.append("picture", files.item(0) as File);
-        uploadProfilePicture(formData);
     }
 </script>
 

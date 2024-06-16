@@ -1,4 +1,4 @@
-use actix_multipart::form::{tempfile::TempFile, MultipartForm};
+use actix_multipart::form::{tempfile::TempFile, text::Text, MultipartForm};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -11,5 +11,6 @@ pub struct UpdateUserDetailsPayload {
 #[derive(Debug, MultipartForm)]
 pub struct UploadPictureForm {
     #[multipart(limit = "2MB")]
-    pub picture: TempFile,
+    pub picture: Option<TempFile>,
+    pub details: Text<String>
 }

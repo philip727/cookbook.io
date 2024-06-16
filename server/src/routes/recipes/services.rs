@@ -234,6 +234,22 @@ pub async fn create_recipe(
     let recipe_id = insert_recipe.unwrap();
 
     if let Some(temp_thumbnail_file) = form.thumbnail {
+        let Some(mime_type) = &temp_thumbnail_file.content_type else {
+            pretty_error!("Invalid thumbnail", "Couldn't get mime type", error);
+
+            return HttpResponse::BadRequest().json(error);
+        };
+
+        if mime_type != &"image/jpeg" && mime_type != &"image/png" {
+            pretty_error!(
+                "Invalid thumbnail",
+                "An invalid mime type was passed, only jpeg/png",
+                error
+            );
+
+            return HttpResponse::BadRequest().json(error);
+        }
+
         // Does not need to resolve or return
         // If it fails we just use default thumbnail
         match rename_temp_file(temp_thumbnail_file, "./thumbnails", &file_name) {
