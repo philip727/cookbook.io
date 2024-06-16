@@ -1,23 +1,33 @@
 use std::{
-    fs::{self, File},
+    fs::{self, rename, File},
     io::{BufWriter, Read, Write},
     path::Path,
 };
 
 use crate::{
-    database::models::recipe::Recipe, middleware::auth::AuthenticationExtension, pretty_error,
-    recipe_io::RecipeFileJson, routes::error::PrettyErrorResponse,
+    database::models::{recipe::Recipe, recipe_thumbnails::RecipeThumbnail},
+    extractors::auth::Authorized,
+    middleware::auth::AuthenticationExtension,
+    pretty_error,
+    recipe_io::RecipeFileJson,
+    routes::error::PrettyErrorResponse,
+    static_files::helpers::rename_temp_file,
 };
+use actix_multipart::{form::MultipartForm, Multipart};
 use actix_web::{
     get,
     web::{self, Data},
     HttpMessage, HttpRequest, HttpResponse, Responder,
 };
+use futures::TryStreamExt;
 use serde_json::json;
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
-use super::{constants::RECIPE_DIR, helpers::GetRecipeQueryParams};
+use super::{
+    constants::RECIPE_DIR,
+    helpers::{CreateRecipeForm, GetRecipeQueryParams},
+};
 
 #[get("/all")]
 pub async fn get_recipes(
@@ -142,34 +152,35 @@ pub async fn get_recipe(
 
 // #[post(/create)]
 pub async fn create_recipe(
-    req: HttpRequest,
-    payload: web::Json<RecipeFileJson>,
+    authorized: Authorized,
+    MultipartForm(form): MultipartForm<CreateRecipeForm>,
     pool: Data<Pool<Postgres>>,
 ) -> impl Responder {
-    let extensions = req.extensions();
-    let auth = extensions.get::<AuthenticationExtension>();
+    if let Authorized::Failed(reason) = authorized {
+        pretty_error!("Unauthorized", reason, error);
 
-    // Need to make sure we can actually get the auth details from extension
-    let Some(auth) = auth else {
-        pretty_error!(
-            "Unauthorized".to_string(),
-            "Unable to get auth details from extension",
-            error
-        );
         return HttpResponse::Unauthorized().json(error);
+    }
+
+    let Authorized::Passed(uid, _username) = authorized else {
+        panic!("Despite the if let authorized::failed, we still panicked");
     };
 
-    let Ok(uid) = auth.uid.parse::<i32>() else {
-        pretty_error!(
-            "Unauthorized".to_string(),
-            "Invalid uid passed in auth",
-            error
-        );
+    let uuid = Uuid::new_v4();
+    let file_name = uid.to_string() + "-" + &uuid.to_string();
+    let file_path = RECIPE_DIR.to_owned() + &file_name;
 
-        return HttpResponse::InternalServerError().json(error);
-    };
+    let recipe = serde_json::from_str::<RecipeFileJson>(&form.recipe.to_string());
+    println!("{:?}", recipe);
 
-    if let Err(e) = payload.is_valid_recipe() {
+    if let Err(err) = recipe {
+        pretty_error!("Invalid recipe", err.to_string(), error);
+
+        return HttpResponse::BadRequest().json(error);
+    }
+    let recipe = recipe.unwrap();
+
+    if let Err(e) = recipe.is_valid_recipe() {
         pretty_error!("Invalid recipe format", e.to_string(), error);
 
         return HttpResponse::BadRequest().json(error);
@@ -185,11 +196,7 @@ pub async fn create_recipe(
         }
     }
 
-    let uuid = Uuid::new_v4();
-    let file_name = uid.to_string() + "-" + &uuid.to_string();
-    let file_path = RECIPE_DIR.to_owned() + &file_name;
     let file = File::create(file_path.clone());
-
     if let Err(e) = file {
         pretty_error!("Failed to save recipe file", e.to_string(), error);
 
@@ -198,7 +205,7 @@ pub async fn create_recipe(
 
     let file = file.unwrap();
     let mut writer = BufWriter::new(file);
-    let write = serde_json::to_writer(&mut writer, &payload);
+    let write = serde_json::to_writer(&mut writer, &recipe);
 
     if let Err(e) = write {
         pretty_error!("Failed to write to recipe file", e.to_string(), error);
@@ -214,7 +221,8 @@ pub async fn create_recipe(
         return HttpResponse::InternalServerError().json(error);
     }
 
-    if let Err(e) = Recipe::insert(&pool, file_name, uid).await {
+    let insert_recipe = Recipe::insert(&pool, file_name.clone(), uid).await;
+    if let Err(e) = insert_recipe {
         pretty_error!(
             "Failed to insert recipe data into database",
             e.to_string(),
@@ -223,6 +231,18 @@ pub async fn create_recipe(
 
         return HttpResponse::InternalServerError().json(error);
     }
+    let recipe_id = insert_recipe.unwrap();
+
+    if let Some(temp_thumbnail_file) = form.thumbnail {
+        // Does not need to resolve or return
+        // If it fails we just use default thumbnail
+        match rename_temp_file(temp_thumbnail_file, "./thumbnails", &file_name) {
+            Ok(file_name) => {
+                let _ = RecipeThumbnail::insert_or_update(&pool, recipe_id, file_name).await;
+            }
+            _ => {}
+        }
+    };
 
     HttpResponse::Ok().body("Succesfully created recipe")
 }
