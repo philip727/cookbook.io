@@ -29,16 +29,9 @@ impl User {
         .bind(email)
         .bind(password)
         .fetch_one(pool)
-        .await;
-
-        // Returns failed insert with message
-        if let Err(e) = rec {
-            let err = e.to_string();
-            return Err(anyhow!("Failed to insert user: {}", err));
-        }
+        .await?;
 
         // Returns the uid and username
-        let rec = rec.unwrap();
         let uid: i32 = rec.try_get("uid").context("Failed to get uid")?;
         let username: String = rec.try_get("username").context("Failed to get username")?;
 
