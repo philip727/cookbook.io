@@ -26,7 +26,7 @@ impl ProfilePicture {
 
         if let Err(e) = rec {
             let err = e.to_string();
-            return Err(anyhow!("Failed to insert user: {}", err));
+            return Err(anyhow!("Failed to insert profile picture for user: {}", err));
         }
 
         Ok(())

@@ -1,3 +1,4 @@
+use anyhow::Context;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sqlx::{prelude::FromRow, Pool, Postgres, Row};
@@ -99,16 +100,19 @@ impl Recipe {
         pool: &Pool<Postgres>,
         file_path: String,
         user_id: i32,
-    ) -> Result<(), anyhow::Error> {
-        let _ = sqlx::query(
+    ) -> Result<i32, anyhow::Error> {
+        let rec = sqlx::query(
             r#"INSERT INTO recipes (recipe_file_path, user_id)
-        VALUES ( $1, $2 )"#,
+        VALUES ( $1, $2 ) RETURNING id"#,
         )
         .bind(file_path)
         .bind(user_id)
-        .execute(pool)
+        .fetch_one(pool)
         .await?;
 
-        Ok(())
+        // Returns failed insert with message
+        let recipe_id: i32 = rec.try_get("id").context("Failed to get recipe id")?;
+
+        Ok(recipe_id)
     }
 }
