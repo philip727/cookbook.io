@@ -1,6 +1,6 @@
 <script lang="ts">
     import { endpoint } from "$lib/api";
-    import { JWT_TOKEN_KEY, getBearer, user } from "$lib/login";
+    import { JWT_TOKEN_KEY, getBearer, signedInUser, user } from "$lib/login";
     import { HttpStatusCode } from "axios";
     import type { ResponseError } from "../../../components/ErrorBox";
     import ErrorBox from "../../../components/ErrorBox.svelte";
@@ -10,14 +10,8 @@
     import TextSinglelineInput from "../../../components/TextSinglelineInput.svelte";
     import type { PageData } from "./$types";
     import { goto } from "$app/navigation";
-    import type { PublicUserProfileDetails } from "$lib/profile";
     import uploadArrow from "$lib/images/upload-arrow.svg";
     import deleteBin from "$lib/images/recycle-bin.svg";
-
-    let currentUser: PublicUserProfileDetails | null;
-    user.subscribe((value) => {
-        currentUser = value;
-    });
 
     // Retrieved account data
     export let data: PageData;
@@ -49,19 +43,20 @@
             location: changeData.location == "" ? null : changeData.location,
         };
 
-        const formData = new FormData();
-        if (files && files.item(0)) {
-            formData.append("picture", files.item(0) as File);
-        }
+        const form = new FormData();
+        form.append("details", JSON.stringify(json));
 
-        formData.append("details", JSON.stringify(json));
+        // Picture doesn't have to be present
+        if (files && files.item(0)) {
+            form.append("picture", files.item(0) as File);
+        }
 
         let response = await window.fetch(endpoint("/account/update_details"), {
             method: "POST",
             headers: {
                 Authorization: bearer,
             },
-            body: formData,
+            body: form,
         });
 
         if (!response.ok) {
@@ -102,10 +97,10 @@
         }
 
         // Updates all the current pictures with the new one given if updated already
-        if (currentUser != null) {
-            user.set({ ...currentUser, picture: null });
+        if (signedInUser != null) {
+            user.set({ ...signedInUser, picture: null });
         }
-    }
+    };
 </script>
 
 <section class="w-full">
@@ -148,16 +143,16 @@
                     profile picture
                 </p>
                 <div class="h-fit flex flex-row mt-1">
-                    {#if currentUser?.picture != null}
+                    {#if signedInUser?.picture != null}
                         <img
                             class="h-16 w-16 object-cover"
-                            src={endpoint(`/pfp/${currentUser?.picture}`)}
+                            src={endpoint(`/pfp/${signedInUser?.picture}`)}
                             alt="User profile avatar"
                         />
                     {:else}
                         <img
                             class="h-16 w-16 object-cover"
-                            src={`https://api.dicebear.com/8.x/shapes/svg?seed=${currentUser?.username}`}
+                            src={`https://api.dicebear.com/8.x/shapes/svg?seed=${signedInUser?.username}`}
                             alt="User profile avatar"
                         />
                     {/if}
@@ -179,7 +174,7 @@
                         accept="image/png, image/jpeg"
                         bind:files
                     />
-                    {#if currentUser?.picture != null}
+                    {#if signedInUser?.picture != null}
                         <button
                             class="cursor-pointer h-16 w-16 bg-[var(--yellow)] ml-4 hover:bg-[var(--dark-yellow)] duration-200 flex justify-center items-center"
                             on:click={deleteProfilePicture}

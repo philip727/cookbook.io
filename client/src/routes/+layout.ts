@@ -1,8 +1,6 @@
 export const ssr = false;
 
-import { endpoint } from "$lib/api";
 import { JWT_TOKEN_KEY, attemptJWTLogin, user } from "$lib/login";
-import type { PublicUserProfileDetails } from "$lib/profile";
 import type { LayoutLoad } from "./$types";
 
 export const load: LayoutLoad = async ({ fetch }) => {

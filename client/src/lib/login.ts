@@ -46,7 +46,7 @@ export const requestJWTVerification = async (key: string, fetch: Function): Prom
 }
 
 // Attempt to login and get user details
-export const attemptJWTLogin =  async (key: string, fetch: Function): Promise<PublicUserProfileDetails | null> => {
+export const attemptJWTLogin = async (key: string, fetch: Function): Promise<PublicUserProfileDetails | null> => {
     let jwtClaims = await requestJWTVerification(key, fetch);
     if (jwtClaims == null) {
         return null;

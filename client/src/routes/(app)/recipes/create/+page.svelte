@@ -35,7 +35,7 @@
     const uploadRecipe = async () => {
         let form = new FormData();
 
-        if (files && files.item) {
+        if (files && files.item(0)) {
             form.append("thumbnail", files.item(0) as File);
         }
 
@@ -46,14 +46,14 @@
             orderedSteps.push({ order: i, step_details: step });
         }
 
-        let body = {
+        let recipe = {
             title: title,
             description: description,
             ingredients: ingredients,
             steps: orderedSteps,
         }
+        form.append("recipe", JSON.stringify(recipe));
 
-        form.append("recipe", JSON.stringify(body));
         let bearer = getBearer();
         if (!bearer) {
             return;
@@ -81,6 +81,7 @@
 
 <section class="flex w-full h-fit justify-center items-center">
     <form on:submit={uploadRecipe} class="shadow-one flex flex-col gap-2 w-[580px] mt-20 p-4 bg-white">
+        <h1 class="text-3xl font-bold">Create a recipe</h1>
         <article>
             <p class="text-sm tracking-wider font-semibold">title</p>
             <TextSinglelineInput
@@ -224,17 +225,19 @@
         </article>
         <article>
             <p class="text-sm tracking-wider font-semibold">thumbnail</p>
-            <label for="thumbnail-upload">
-                <div
-                    class="cursor-pointer h-10 w-10 bg-[var(--yellow)] hover:bg-[var(--dark-yellow)] duration-200 flex justify-center items-center mt-1"
-                >
-                    <img
-                        class="h-5 w-5"
-                        src={uploadArrow}
-                        alt="Upload button"
-                    />
-                </div>
-            </label>
+            <div class="w-10">
+                <label for="thumbnail-upload">
+                    <div
+                        class="cursor-pointer h-10 w-10 bg-[var(--yellow)] hover:bg-[var(--dark-yellow)] duration-200 flex justify-center items-center mt-1"
+                    >
+                        <img
+                            class="h-5 w-5"
+                            src={uploadArrow}
+                            alt="Upload button"
+                        />
+                    </div>
+                </label>
+            </div>
             <input
                 id="thumbnail-upload"
                 class="h-12 w-12 hidden"

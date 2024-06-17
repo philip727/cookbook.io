@@ -4,12 +4,13 @@
     import UserPreview from "./UserPreview.svelte";
     import { onDestroy, onMount } from "svelte";
     import type { PublicUserProfileDetails } from "$lib/profile";
-    let currentUser: PublicUserProfileDetails | null = null;
+    import { goto } from "$app/navigation";
     let showDropdown = false;
 
-    user.subscribe((value) => {
-        currentUser = value;
-    });
+    let signedInUser: PublicUserProfileDetails | null = null;
+    user.subscribe(val => {
+        signedInUser = val;
+    })
 
     function closeDropdownWhenNotClicked(event: MouseEvent) {
         if (!event.target) {
@@ -44,14 +45,14 @@
         <a class="" href="/recipes">RECIPES</a>
     </section>
     <section class="flex flex-row gap-8 w-1/3 justify-end">
-        {#if currentUser}
+        {#if signedInUser}
             <div class="relative dropdown-btn">
                 <button
                     on:click={() => {
                         showDropdown = !showDropdown;
                     }}
                 >
-                    <UserPreview user={currentUser} />
+                    <UserPreview user={signedInUser} />
                 </button>
                 {#if showDropdown}
                     <div
@@ -79,6 +80,7 @@
                             on:click={() => {
                                 localStorage.removeItem(JWT_TOKEN_KEY);
                                 user.set(null);
+                                goto("/")
                             }}
                             class="w-32 bg-[var(--yellow)] hover:bg-[var(--dark-yellow)] py-2 transition-all duration-200"
                         >
