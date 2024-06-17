@@ -11,7 +11,6 @@
     user.subscribe(val => {
         signedInUser = val;
     })
-
 </script>
 
 {#if data.error}
@@ -32,7 +31,7 @@
     {:else}
         <div class="h-10" />
     {/if}
-    <div class="flex flex-row flex-wrap gap-2 items-center justify-start">
+    <div class="flex flex-row flex-wrap gap-4 items-center justify-start">
         {#each data.recipes as post}
             <a href={`/recipes/${post.id}`}>
                 <div

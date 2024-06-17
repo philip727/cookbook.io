@@ -9,12 +9,15 @@
     import { endpoint } from "$lib/api";
     import { goto } from "$app/navigation";
     import { HttpStatusCode } from "axios";
+    import { type ResponseError } from "../../../../components/ErrorBox";
+    import ErrorBox from "../../../../components/ErrorBox.svelte";
 
     let title: string | null = null;
     let description: string | null = null;
     let ingredients: Array<Ingredient> = [];
     let steps: Array<string> = [];
     let files: FileList;
+    let createError: ResponseError | null = null;
 
     const addIngredientSlot = () => {
         ingredients.push({
@@ -39,7 +42,7 @@
             form.append("thumbnail", files.item(0) as File);
         }
 
-        let orderedSteps = []
+        let orderedSteps = [];
         for (let i = 0; i < steps.length; i++) {
             const step = steps[i];
 
@@ -51,7 +54,7 @@
             description: description,
             ingredients: ingredients,
             steps: orderedSteps,
-        }
+        };
         form.append("recipe", JSON.stringify(recipe));
 
         let bearer = getBearer();
@@ -64,8 +67,8 @@
             body: form,
             headers: {
                 Authorization: bearer,
-            }
-        })
+            },
+        });
 
         if (!response.ok) {
             if (response.status == HttpStatusCode.Unauthorized) {
@@ -73,15 +76,34 @@
                 goto("/");
             }
 
+            let data = await response.json();
+            createError = {
+                error: data.error,
+                description: data.description,
+            };
             return;
         }
 
-    }
+        let recipe_id_response = await response.text();
+        let recipe_id = parseInt(recipe_id_response);
+
+        goto(`/recipes/${recipe_id}`);
+    };
 </script>
 
 <section class="flex w-full h-fit justify-center items-center">
-    <form on:submit={uploadRecipe} class="shadow-one flex flex-col gap-2 w-[580px] mt-20 p-4 bg-white">
+    <form
+        on:submit={uploadRecipe}
+        class="shadow-one flex flex-col gap-2 w-[580px] mt-20 p-4 bg-white"
+    >
         <h1 class="text-3xl font-bold">Create a recipe</h1>
+        {#if createError != null}
+            <ErrorBox
+                extraClass="mt-6"
+                error={createError.error}
+                description={createError.description}
+            />
+        {/if}
         <article>
             <p class="text-sm tracking-wider font-semibold">title</p>
             <TextSinglelineInput
@@ -250,7 +272,7 @@
             class="w-fit px-3 py-1 bg-[var(--yellow)] hover:bg-[var(--dark-yellow)] duration-200 flex flex-row gap-2 items-center mt-1"
             type="submit"
         >
-            <p class="text-base font-semibold">SAVE CHANGES</p>
+            <p class="text-base font-semibold">CREATE</p>
         </button>
     </form>
 </section>
