@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::helpers::is_alnum_whitespace_and_ex_chars;
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct RecipeFileJson {
     pub title: String,
     pub description: String,
@@ -48,14 +48,14 @@ impl RecipeFileJson {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct RecipeMeasurements {
     pub ingredient: String,
     pub measurement: Measurement,
     pub amount: u32,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum Measurement {
     Millilitre,
     Litre,
@@ -74,7 +74,7 @@ pub enum Measurement {
     Piece,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct RecipeStep {
     pub order: u32,
     pub step_details: String,

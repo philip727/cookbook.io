@@ -10,7 +10,7 @@ use crate::{
     middleware::auth::AuthenticationExtension,
     pretty_error,
     recipe_io::RecipeFileJson,
-    routes::error::PrettyErrorResponse,
+    routes::{error::PrettyErrorResponse, recipes::helpers::FullRecipePayload},
     static_files::helpers::rename_temp_file,
 };
 use actix_multipart::{form::MultipartForm, Multipart};
@@ -138,16 +138,24 @@ pub async fn get_recipe(
     let mut file = file.unwrap();
     let mut data = String::new();
     file.read_to_string(&mut data).unwrap();
-    let recipe_json = serde_json::from_str::<RecipeFileJson>(&data);
 
+    let recipe_json = serde_json::from_str::<RecipeFileJson>(&data);
     if let Err(e) = recipe_json {
         pretty_error!("Recipe file is invalid".to_string(), e.to_string(), error);
 
         return HttpResponse::InternalServerError().json(error);
     }
-    let recipe_json = recipe_json.unwrap();
 
-    HttpResponse::Ok().json(recipe_json)
+    let recipe_json = recipe_json.unwrap();
+    let full_recipe = FullRecipePayload {
+        date_created: recipe.date_created,
+        id: recipe.id,
+        recipe: recipe_json,
+        poster: recipe.poster,
+        thumbnail_path: recipe.thumbnail_path,
+    };
+
+    HttpResponse::Ok().json(full_recipe)
 }
 
 // #[post(/create)]
@@ -171,10 +179,13 @@ pub async fn create_recipe(
     let file_path = RECIPE_DIR.to_owned() + &file_name;
 
     let recipe = serde_json::from_str::<RecipeFileJson>(&form.recipe.to_string());
-    println!("{:?}", recipe);
 
     if let Err(err) = recipe {
-        pretty_error!("Invalid recipe", err.to_string(), error);
+        pretty_error!(
+            "Invalid recipe",
+            "The recipe is invalid, please ensure that all fields are filled out",
+            error
+        );
 
         return HttpResponse::BadRequest().json(error);
     }
@@ -260,5 +271,5 @@ pub async fn create_recipe(
         }
     };
 
-    HttpResponse::Ok().body("Succesfully created recipe")
+    HttpResponse::Ok().body(recipe_id.to_string())
 }

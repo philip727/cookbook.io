@@ -11,7 +11,7 @@ pub struct Recipe {
     pub date_created: chrono::DateTime<Utc>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Poster {
     pub uid: i32,
     pub username: String,
@@ -87,13 +87,36 @@ impl Recipe {
         Ok(recipes)
     }
 
-    pub async fn get_by_id(pool: &Pool<Postgres>, recipe_id: i32) -> Result<Recipe, anyhow::Error> {
-        let recipe = sqlx::query_as::<_, Recipe>(r#"SELECT * FROM recipes WHERE id = $1"#)
+    pub async fn get_by_id(pool: &Pool<Postgres>, recipe_id: i32) -> Result<RecipeWithPoster, anyhow::Error> {
+        let row = sqlx::query(r#"
+        SELECT u.uid, u.username, pp.picture_path, r.id, r.recipe_file_path, r.date_created, rt.thumbnail_path FROM users u
+            RIGHT OUTER JOIN recipes r
+                ON u.uid = r.user_id
+            LEFT OUTER JOIN user_details ud
+                ON u.uid = ud.user_id
+            LEFT OUTER JOIN profile_pictures pp
+                ON u.uid = pp.user_id
+            LEFT OUTER JOIN recipe_thumbnails rt
+                ON rt.recipe_id = r.id
+                    WHERE r.id = $1;"#)
             .bind(recipe_id)
             .fetch_one(pool)
             .await?;
 
-        Ok(recipe)
+        let recipes =
+            RecipeWithPoster {
+                poster: Poster {
+                    uid: row.get("uid"),
+                    username: row.get("username"),
+                    picture: row.try_get("picture_path").unwrap_or(None),
+                },
+                id: row.get("id"),
+                recipe_file_path: row.get("recipe_file_path"),
+                date_created: row.get("date_created"),
+                thumbnail_path: row.try_get("thumbnail_path").unwrap_or(None),
+            };
+
+        Ok(recipes)
     }
 
     pub async fn insert(
