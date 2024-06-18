@@ -1,7 +1,7 @@
 import { endpoint } from "$lib/api";
 import type { PageLoad } from "./$types";
 import type { ResponseError } from "./../../../components/ErrorBox.ts"
-import type { RecipeInfo } from "./helpers";
+import type { RecipePreview } from "./helpers";
 
 export const load: PageLoad = async ({ fetch }) => {
     let response = await fetch(
@@ -17,7 +17,7 @@ export const load: PageLoad = async ({ fetch }) => {
     }
 
     return {
-        recipes: data as RecipeInfo[]
+        recipes: data as RecipePreview[]
     };
 }
 

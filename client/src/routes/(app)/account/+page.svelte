@@ -1,6 +1,6 @@
 <script lang="ts">
     import { endpoint } from "$lib/api";
-    import { JWT_TOKEN_KEY, getBearer, signedInUser, user } from "$lib/login";
+    import { JWT_TOKEN_KEY, getBearer, user } from "$lib/login";
     import { HttpStatusCode } from "axios";
     import type { ResponseError } from "../../../components/ErrorBox";
     import ErrorBox from "../../../components/ErrorBox.svelte";
@@ -12,10 +12,15 @@
     import { goto } from "$app/navigation";
     import uploadArrow from "$lib/images/upload-arrow.svg";
     import deleteBin from "$lib/images/recycle-bin.svg";
+    import type { PublicUserProfileDetails } from "$lib/profile";
 
     // Retrieved account data
     export let data: PageData;
     let files: FileList;
+    let signedInUser: PublicUserProfileDetails | null = null;
+    user.subscribe(val => {
+        signedInUser = val;
+    })
 
     // The data we submit/change
     let submitError: ResponseError | null = null;
