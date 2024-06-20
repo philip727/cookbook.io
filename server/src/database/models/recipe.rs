@@ -25,7 +25,7 @@ pub struct RecipeWithPoster {
     pub id: i32,
     pub recipe_file_path: String,
     pub date_created: chrono::DateTime<Utc>,
-    pub thumbnail_path: Option<String>,
+    pub thumbnail: Option<String>,
 }
 
 impl Recipe {
@@ -80,14 +80,52 @@ impl Recipe {
                 id: row.get("id"),
                 recipe_file_path: row.get("recipe_file_path"),
                 date_created: row.get("date_created"),
-                thumbnail_path: row.try_get("thumbnail_path").unwrap_or(None),
+                thumbnail: row.try_get("thumbnail_path").unwrap_or(None),
             })
             .collect();
 
         Ok(recipes)
     }
 
-    pub async fn get_by_id(pool: &Pool<Postgres>, recipe_id: i32) -> Result<RecipeWithPoster, anyhow::Error> {
+    pub async fn get_by_poster(
+        pool: &Pool<Postgres>,
+        user_id: i32,
+    ) -> anyhow::Result<Vec<RecipeWithPoster>> {
+        let rows = sqlx::query(r#"
+        SELECT u.uid, u.username, pp.picture_path, r.id, r.recipe_file_path, r.date_created, rt.thumbnail_path FROM users u
+            RIGHT OUTER JOIN recipes r
+                ON u.uid = r.user_id
+            LEFT OUTER JOIN user_details ud
+                ON u.uid = ud.user_id
+            LEFT OUTER JOIN profile_pictures pp
+                ON u.uid = pp.user_id
+            LEFT OUTER JOIN recipe_thumbnails rt
+                ON rt.recipe_id = r.id
+                    WHERE u.uid = $1;"#)
+            .bind(user_id)
+            .fetch_all(pool)
+            .await?;
+
+        Ok(rows
+            .iter()
+            .map(|row| RecipeWithPoster {
+                poster: Poster {
+                    uid: row.get("uid"),
+                    username: row.get("username"),
+                    picture: row.try_get("picture_path").unwrap_or(None),
+                },
+                id: row.get("id"),
+                recipe_file_path: row.get("recipe_file_path"),
+                date_created: row.get("date_created"),
+                thumbnail: row.try_get("thumbnail_path").unwrap_or(None),
+            })
+            .collect())
+    }
+
+    pub async fn get_by_id(
+        pool: &Pool<Postgres>,
+        recipe_id: i32,
+    ) -> Result<RecipeWithPoster, anyhow::Error> {
         let row = sqlx::query(r#"
         SELECT u.uid, u.username, pp.picture_path, r.id, r.recipe_file_path, r.date_created, rt.thumbnail_path FROM users u
             RIGHT OUTER JOIN recipes r
@@ -103,18 +141,17 @@ impl Recipe {
             .fetch_one(pool)
             .await?;
 
-        let recipes =
-            RecipeWithPoster {
-                poster: Poster {
-                    uid: row.get("uid"),
-                    username: row.get("username"),
-                    picture: row.try_get("picture_path").unwrap_or(None),
-                },
-                id: row.get("id"),
-                recipe_file_path: row.get("recipe_file_path"),
-                date_created: row.get("date_created"),
-                thumbnail_path: row.try_get("thumbnail_path").unwrap_or(None),
-            };
+        let recipes = RecipeWithPoster {
+            poster: Poster {
+                uid: row.get("uid"),
+                username: row.get("username"),
+                picture: row.try_get("picture_path").unwrap_or(None),
+            },
+            id: row.get("id"),
+            recipe_file_path: row.get("recipe_file_path"),
+            date_created: row.get("date_created"),
+            thumbnail: row.try_get("thumbnail_path").unwrap_or(None),
+        };
 
         Ok(recipes)
     }

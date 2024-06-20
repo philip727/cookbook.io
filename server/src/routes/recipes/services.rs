@@ -80,8 +80,8 @@ pub async fn get_recipes(
         let mut file = file.unwrap();
         let mut data = String::new();
         file.read_to_string(&mut data).unwrap();
-        let recipe_json = serde_json::from_str::<RecipeFileJson>(&data);
 
+        let recipe_json = serde_json::from_str::<RecipeFileJson>(&data);
         if let Err(e) = recipe_json {
             pretty_error!("Recipe file is invalid".to_string(), e.to_string(), error);
 
@@ -95,10 +95,80 @@ pub async fn get_recipes(
             "id": recipe.id,
             "title": recipe_json.title,
             "description": recipe_json.description,
-            "thumbnail": recipe.thumbnail_path,
+            "thumbnail": recipe.thumbnail,
         });
 
         json_values.push(value);
+    }
+
+    HttpResponse::Ok().json(json_values)
+}
+
+#[get("by/{user_id}")]
+pub async fn get_recipe_by_poster(
+    pool: Data<Pool<Postgres>>,
+    path: actix_web::web::Path<i32>,
+) -> impl Responder {
+    let uid = path.into_inner();
+
+    let recipes = Recipe::get_by_poster(&pool, uid).await;
+    if let Err(e) = recipes {
+        pretty_error!(
+            format!("Failed to get recipes by user with id: {}", uid),
+            e.to_string(),
+            error
+        );
+
+        return HttpResponse::NotFound().json(error);
+    };
+
+    let recipes = recipes.unwrap();
+    let mut json_values: Vec<serde_json::Value> = Vec::new();
+
+    for recipe in recipes.iter() {
+        let file_path = RECIPE_DIR.to_string() + recipe.recipe_file_path.as_str();
+        let file = File::open(file_path);
+        if let Err(e) = file {
+            pretty_error!(
+                "Recipe file doesn't exist".to_string(),
+                e.to_string(),
+                error
+            );
+
+            return HttpResponse::InternalServerError().json(error);
+        }
+
+        let mut file = file.unwrap();
+        let mut data = String::new();
+        file.read_to_string(&mut data).unwrap();
+
+        let recipe_json = serde_json::from_str::<RecipeFileJson>(&data);
+        if let Err(e) = recipe_json {
+            pretty_error!("Recipe file is invalid".to_string(), e.to_string(), error);
+
+            return HttpResponse::InternalServerError().json(error);
+        }
+
+        let recipe_json = recipe_json.unwrap();
+        let value = json!({
+            "poster": recipe.poster,
+            "id": recipe.id,
+            "title": recipe_json.title,
+            "description": recipe_json.description,
+            "thumbnail": recipe.thumbnail,
+        });
+
+        json_values.push(value)
+    }
+
+    if json_values.is_empty() {
+        pretty_error!(
+            "No recipes found".to_string(),
+            format!("Couldn't find any recipes from the user with id: {}", uid),
+            error
+        );
+
+        return HttpResponse::NotFound().json(error);
     }
 
     HttpResponse::Ok().json(json_values)
@@ -152,7 +222,7 @@ pub async fn get_recipe(
         id: recipe.id,
         recipe: recipe_json,
         poster: recipe.poster,
-        thumbnail_path: recipe.thumbnail_path,
+        thumbnail: recipe.thumbnail,
     };
 
     HttpResponse::Ok().json(full_recipe)

@@ -23,5 +23,5 @@ pub struct FullRecipePayload {
     pub poster: Poster,
     pub id: i32,
     pub date_created: chrono::DateTime<Utc>,
-    pub thumbnail_path: Option<String>
+    pub thumbnail: Option<String>
 }
