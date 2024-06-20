@@ -37,7 +37,7 @@
             registerError = {
                 error: data.error,
                 description: data.description,
-            };
+            } as ResponseError;
             return;
         }
 

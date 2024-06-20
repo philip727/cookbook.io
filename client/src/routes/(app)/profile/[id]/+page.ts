@@ -1,15 +1,12 @@
 import { isResponseError, type ResponseError } from "$lib/routes/error";
-import { getUser, type UserDetails } from "$lib/routes/user";
+import { getRecipesByUser, type RecipeCollection, type RecipePreview } from "$lib/routes/recipe";
+import { getUser } from "$lib/routes/user";
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = async ({fetch, params}) => {
-    let response = await getUser(parseInt(params.id), fetch);
+export const load: PageLoad = async ({ fetch, params }) => {
 
-    console.log(response);
-
-    if (isResponseError(response)) {
-        return response as ResponseError;
+    return {
+        user: await getUser(parseInt(params.id), fetch),
+        recipes: await getRecipesByUser(parseInt(params.id), fetch) as RecipeCollection<RecipePreview>
     }
-
-    return response as UserDetails
 }
