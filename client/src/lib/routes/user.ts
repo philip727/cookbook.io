@@ -2,6 +2,7 @@ import { endpoint } from "$lib/api";
 import type { ResponseError } from "./error";
 
 export type UserDetails = {
+    type: "USER_DETAILS",
     uid: number,
     username: string,
     bio: string | null,
@@ -11,6 +12,7 @@ export type UserDetails = {
 }
 
 export type MinimalUserDetails = {
+    type: "MINIMAL_USER_DETAILS",
     uid: number,
     username: string,
     picture: string | null,

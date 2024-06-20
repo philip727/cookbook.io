@@ -1,4 +1,5 @@
 export type ResponseError = {
+    type: "RESPONSE_ERROR";
     error: string;
     description: string;
 };
