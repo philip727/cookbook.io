@@ -2,7 +2,6 @@
     import { endpoint } from "$lib/api";
     import { JWT_TOKEN_KEY, getBearer, user } from "$lib/login";
     import { HttpStatusCode } from "axios";
-    import type { ResponseError } from "../../../components/ErrorBox";
     import ErrorBox from "../../../components/ErrorBox.svelte";
     import type { Success } from "../../../components/SuccessBox.svelte";
     import SuccessBox from "../../../components/SuccessBox.svelte";
@@ -13,6 +12,7 @@
     import uploadArrow from "$lib/images/upload-arrow.svg";
     import deleteBin from "$lib/images/recycle-bin.svg";
     import type { PublicUserProfileDetails } from "$lib/profile";
+    import type { ResponseError } from "$lib/routes/error";
 
     // Retrieved account data
     export let data: PageData;

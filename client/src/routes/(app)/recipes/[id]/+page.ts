@@ -1,20 +1,19 @@
-import { endpoint } from "$lib/api";
-import type { ResponseError } from "../../../../components/ErrorBox";
+import { isResponseError, type ResponseError } from "$lib/routes/error";
+import { getRecipe } from "$lib/routes/recipe";
 import type { PageLoad } from "./$types";
 import type { Recipe } from "./helper";
 
 export const load: PageLoad = async ({ fetch, params }) => {
-    let response = await fetch(endpoint(`/recipes/${params.id}`));
+    let response = await getRecipe(parseInt(params.id), fetch);
 
-    let data = await response.json();
-    if (!response.ok) {
+    if (isResponseError(response)) {
         return {
-            error: data.error,
-            description: data.description
-        } as ResponseError
+            error: (response as ResponseError).error,
+            description: (response as ResponseError).description
+        } as ResponseError;
     }
 
     return {
-        recipe: data as Recipe,
+        recipe: response as Recipe,
     };
 }

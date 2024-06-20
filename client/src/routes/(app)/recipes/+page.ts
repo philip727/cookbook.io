@@ -1,6 +1,6 @@
 import { endpoint } from "$lib/api";
+import type { ResponseError } from "$lib/routes/error";
 import type { PageLoad } from "./$types";
-import type { ResponseError } from "./../../../components/ErrorBox.ts"
 import type { RecipePreview } from "./helpers";
 
 export const load: PageLoad = async ({ fetch }) => {
