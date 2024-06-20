@@ -189,6 +189,7 @@ impl User {
         }
 
         let user = rows.unwrap();
+        let uid: i32 = user.get("uid");
         let username: Option<String> = user.try_get("username").unwrap_or(None);
         let bio: Option<String> = user.try_get("bio").unwrap_or(None);
         let pronouns: Option<String> = user.try_get("pronouns").unwrap_or(None);
@@ -196,6 +197,7 @@ impl User {
         let picture_path: Option<String> = user.try_get("picture_path").unwrap_or(None);
 
         let value = json!({
+            "uid": uid,
             "username": username,
             "bio": bio,
             "pronouns": pronouns,

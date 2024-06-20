@@ -6,7 +6,7 @@
     import { JWT_TOKEN_KEY, attemptJWTLogin, user } from "$lib/login";
     import { goto } from "$app/navigation";
     import { endpoint } from "$lib/api";
-    import type { ResponseError } from "../../../components/ErrorBox";
+    import type { ResponseError } from "$lib/routes/error";
 
     let loginError: ResponseError | null = null;
     let formData = {

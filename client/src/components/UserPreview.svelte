@@ -1,8 +1,8 @@
 <script lang="ts">
     import { endpoint } from "$lib/api";
-    import type { PublicUserProfileDetails } from "$lib/profile";
+    import type { MinimalUserDetails, UserDetails } from "$lib/routes/user";
 
-    export let user: PublicUserProfileDetails | null = null;
+    export let user: UserDetails | MinimalUserDetails | null = null;
 </script>
 
 {#if user}

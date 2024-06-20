@@ -4,10 +4,10 @@
     import type { PageData } from "./$types";
     import defaultThumbnail from "$lib/images/default-thumbnail.jpg"
     import { user } from "$lib/login";
-    import type { PublicUserProfileDetails } from "$lib/profile";
+    import type { UserDetails } from "$lib/routes/user";
 
     export let data: PageData;
-    let signedInUser: PublicUserProfileDetails | null = null;
+    let signedInUser: UserDetails | null = null;
     user.subscribe(val => {
         signedInUser = val;
     })

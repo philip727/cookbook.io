@@ -3,12 +3,13 @@
     import { type JWTClaims, user, JWT_TOKEN_KEY } from "$lib/login";
     import UserPreview from "./UserPreview.svelte";
     import { onDestroy, onMount } from "svelte";
-    import type { PublicUserProfileDetails } from "$lib/profile";
     import { goto } from "$app/navigation";
+    import type { UserDetails } from "$lib/routes/user";
     let showDropdown = false;
 
-    let signedInUser: PublicUserProfileDetails | null = null;
+    let signedInUser: UserDetails | null = null;
     user.subscribe(val => {
+        console.log(val);
         signedInUser = val;
     })
 
@@ -58,11 +59,14 @@
                     <div
                         class="shadow-one absolute w-fit h-fit mt-7 right-0 flex flex-col items-end dropdown py-2 px-2 gap-2 font-medium text-sm bg-white"
                     >
-                        <button>
+                        <a
+                            on:click={() => (showDropdown = false)}
+                            href={`/profile/${signedInUser.uid}`}
+                        >
                             <h1 class="hover:text-[var(--green)] duration-150">
                                 PROFILE
                             </h1>
-                        </button>
+                        </a>
                         <button>
                             <h1 class="hover:text-[var(--green)] duration-150">
                                 MY RECIPES

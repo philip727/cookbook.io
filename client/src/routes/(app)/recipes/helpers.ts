@@ -1,7 +1,7 @@
-import type { PublicUserProfileDetails } from "$lib/profile"
+import type { MinimalUserDetails } from "$lib/routes/user"
 
 export type RecipePreview = {
-    poster: PublicUserProfileDetails,
+    poster: MinimalUserDetails,
     id: number,
     title: string,
     description: string,

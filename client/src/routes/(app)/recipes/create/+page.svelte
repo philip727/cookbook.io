@@ -9,8 +9,8 @@
     import { endpoint } from "$lib/api";
     import { goto } from "$app/navigation";
     import { HttpStatusCode } from "axios";
-    import { type ResponseError } from "../../../../components/ErrorBox";
     import ErrorBox from "../../../../components/ErrorBox.svelte";
+    import type { ResponseError } from "$lib/routes/error";
 
     let title: string | null = null;
     let description: string | null = null;

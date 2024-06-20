@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
 import { endpoint } from './api';
-import type { PublicUserProfileDetails } from './profile';
+import type { UserDetails } from './routes/user';
 export const JWT_TOKEN_KEY = "jwt_authorization_token";
 
 export type JWTClaims = {
@@ -8,7 +8,7 @@ export type JWTClaims = {
     username: string,
 }
 
-export const user = writable<PublicUserProfileDetails | null>(null);
+export const user = writable<UserDetails | null>(null);
 
 export const getBearer = (): string | null => {
     let key = window.localStorage.getItem(JWT_TOKEN_KEY);
@@ -46,7 +46,7 @@ export const requestJWTVerification = async (key: string, fetch: Function): Prom
 }
 
 // Attempt to login and get user details
-export const attemptJWTLogin = async (key: string, fetch: Function): Promise<PublicUserProfileDetails | null> => {
+export const attemptJWTLogin = async (key: string, fetch: Function): Promise<UserDetails | null> => {
     let jwtClaims = await requestJWTVerification(key, fetch);
     if (jwtClaims == null) {
         return null;
@@ -57,7 +57,7 @@ export const attemptJWTLogin = async (key: string, fetch: Function): Promise<Pub
         return null;
     };
 
-    let userDetails = await localUserDetails.json() as PublicUserProfileDetails;
+    let userDetails = await localUserDetails.json() as UserDetails;
 
     return userDetails;
 }

@@ -11,13 +11,13 @@
     import { goto } from "$app/navigation";
     import uploadArrow from "$lib/images/upload-arrow.svg";
     import deleteBin from "$lib/images/recycle-bin.svg";
-    import type { PublicUserProfileDetails } from "$lib/profile";
     import type { ResponseError } from "$lib/routes/error";
+    import type { UserDetails } from "$lib/routes/user";
 
     // Retrieved account data
     export let data: PageData;
     let files: FileList;
-    let signedInUser: PublicUserProfileDetails | null = null;
+    let signedInUser: UserDetails | null = null;
     user.subscribe(val => {
         signedInUser = val;
     })

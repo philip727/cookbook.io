@@ -7,7 +7,7 @@
     import Title from "../../../components/Title.svelte";
     import { goto } from "$app/navigation";
     import { endpoint } from "$lib/api";
-    import type { ResponseError } from "../../../components/ErrorBox";
+    import type { ResponseError } from "$lib/routes/error";
 
     let registerError: ResponseError | null = null;
     let registerSuccess: Success | null = null;

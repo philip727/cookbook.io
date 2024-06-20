@@ -7,13 +7,8 @@ export const load: PageLoad = async ({ fetch, params }) => {
     let response = await getRecipe(parseInt(params.id), fetch);
 
     if (isResponseError(response)) {
-        return {
-            error: (response as ResponseError).error,
-            description: (response as ResponseError).description
-        } as ResponseError;
+        return response as ResponseError;
     }
 
-    return {
-        recipe: response as Recipe,
-    };
+    return response as Recipe;
 }
