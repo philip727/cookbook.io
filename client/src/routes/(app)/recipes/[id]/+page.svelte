@@ -6,8 +6,6 @@
 
     export let data: PageData;
 
-    console.log(data);
-
     const formatIngredient = (ingredient: Ingredient) => {
         let following = ingredient.measurement as string;
 
@@ -88,19 +86,19 @@
             <div class="w-fit">
                 <article class="w-fit">
                     <div class="w-full flex justify-end">
-                        <UserPreview user={data.recipe.poster} />
+                        <UserPreview user={data.poster} />
                     </div>
                     <h1 class="text-4xl font-bold mt-2">
-                        {data.recipe.recipe.title}
+                        {data.recipe.title}
                     </h1>
                     <p class="text-lg font-light">
-                        {data.recipe.recipe.description}
+                        {data.recipe.description}
                     </p>
                     <img
                         alt="Recipe thumbnail"
                         class="w-[600px] h-96 mt-2"
                         src={endpoint(
-                            `/thumbnails/${data.recipe.thumbnail_path}`,
+                            `/thumbnails/${data.thumbnail_path}`,
                         )}
                     />
                 </article>
@@ -108,13 +106,13 @@
                 <ul
                     class="list-inside list-disc mt-2 marker:text-[var(--yellow)]"
                 >
-                    {#each data.recipe.recipe.ingredients as ingredient}
+                    {#each data.recipe.ingredients as ingredient}
                         <li>{formatIngredient(ingredient)}</li>
                     {/each}
                 </ul>
                 <p class="mt-8 text-3xl font-semibold">Directions</p>
                 <ul class="list-inside list-none mt-2">
-                    {#each data.recipe.recipe.steps as step}
+                    {#each data.recipe.steps as step}
                         <li class="mt-2">
                             <p class="font-semibold">Step {step.order + 1}</p>
                             <p>

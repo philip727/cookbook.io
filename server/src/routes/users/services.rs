@@ -35,7 +35,7 @@ pub async fn get_all_users(db: Data<Pool<Postgres>>) -> impl Responder {
 #[get("/{id}")]
 pub async fn get_user_by_id(db: Data<Pool<Postgres>>, path: Path<i32>) -> impl Responder {
     let id = path.into_inner();
-    let user = User::get_by_id_public(&db, id).await;
+    let user = User::get_details(&db, id).await;
 
     if let Err(e) = user {
         return HttpResponse::InternalServerError().body(e.to_string());
