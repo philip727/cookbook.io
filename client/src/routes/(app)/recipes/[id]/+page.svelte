@@ -83,7 +83,7 @@
 </script>
 
 <section>
-    <div class="mt-32">
+    <div class="mt-32 flex flex-row justify-center">
         {#if data.recipe}
             <div class="w-fit">
                 <article class="w-fit">
@@ -104,10 +104,23 @@
                         )}
                     />
                 </article>
-                <p class="mt-4 text-3xl font-semibold">Ingredients</p>
-                <ul class="list-inside list-disc mt-2">
+                <p class="mt-8 text-3xl font-semibold">Ingredients</p>
+                <ul
+                    class="list-inside list-disc mt-2 marker:text-[var(--yellow)]"
+                >
                     {#each data.recipe.recipe.ingredients as ingredient}
                         <li>{formatIngredient(ingredient)}</li>
+                    {/each}
+                </ul>
+                <p class="mt-8 text-3xl font-semibold">Directions</p>
+                <ul class="list-inside list-none mt-2">
+                    {#each data.recipe.recipe.steps as step}
+                        <li class="mt-2">
+                            <p class="font-semibold">Step {step.order + 1}</p>
+                            <p>
+                                {step.step_details}
+                            </p>
+                        </li>
                     {/each}
                 </ul>
             </div>
