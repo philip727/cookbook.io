@@ -1,7 +1,7 @@
 <script lang="ts">
     import { endpoint } from "$lib/api";
+    import { Measurement, type Ingredient } from "$lib/routes/recipe";
     import UserPreview from "../../../../components/UserPreview.svelte";
-    import { Measurement, type Ingredient } from "../create/helpers";
     import type { PageData } from "./$types";
 
     export let data: PageData;
@@ -81,7 +81,7 @@
 </script>
 
 <section>
-    <div class="mt-32 flex flex-row justify-center">
+    <div class="mt-32 flex flex-row justify-center pb-16">
         {#if data.recipe}
             <div class="w-fit">
                 <article class="w-fit">
@@ -98,7 +98,7 @@
                         alt="Recipe thumbnail"
                         class="w-[600px] h-96 mt-2"
                         src={endpoint(
-                            `/thumbnails/${data.thumbnail_path}`,
+                            `/thumbnails/${data.thumbnail}`,
                         )}
                     />
                 </article>

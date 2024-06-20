@@ -2,7 +2,6 @@
     import Combobox from "../../../../components/Combobox.svelte";
     import NumberInput from "../../../../components/NumberInput.svelte";
     import TextSinglelineInput from "../../../../components/TextSinglelineInput.svelte";
-    import { Measurement, type Ingredient } from "./helpers";
     import uploadArrow from "$lib/images/upload-arrow.svg";
     import TextMultilineInput from "../../../../components/TextMultilineInput.svelte";
     import { JWT_TOKEN_KEY, getBearer } from "$lib/login";
@@ -11,6 +10,7 @@
     import { HttpStatusCode } from "axios";
     import ErrorBox from "../../../../components/ErrorBox.svelte";
     import type { ResponseError } from "$lib/routes/error";
+    import { Measurement, type Ingredient } from "$lib/routes/recipe";
 
     let title: string | null = null;
     let description: string | null = null;
@@ -80,7 +80,7 @@
             createError = {
                 error: data.error,
                 description: data.description,
-            };
+            } as ResponseError;
             return;
         }
 

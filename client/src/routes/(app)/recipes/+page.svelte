@@ -1,10 +1,8 @@
 <script lang="ts">
-    import { endpoint } from "$lib/api";
-    import UserPreview from "../../../components/UserPreview.svelte";
     import type { PageData } from "./$types";
-    import defaultThumbnail from "$lib/images/default-thumbnail.jpg"
     import { user } from "$lib/login";
     import type { UserDetails } from "$lib/routes/user";
+    import RecipeDisplay from "../../../components/RecipeDisplay.svelte";
 
     export let data: PageData;
     let signedInUser: UserDetails | null = null;
@@ -13,11 +11,11 @@
     })
 </script>
 
-{#if data.error}
+{#if data.type == "RESPONSE_ERROR"}
     <div>
         <p>Failed to load recipes</p>
     </div>
-{:else if data.recipes}
+{:else}
     {#if signedInUser}
         <div class="h-20 flex flex-row items-center">
             <a
@@ -31,38 +29,9 @@
     {:else}
         <div class="h-10" />
     {/if}
-    <div class="flex flex-row flex-wrap gap-4 items-center justify-start">
+    <div class="recipes-container justify-start flex-row">
         {#each data.recipes as post}
-            <a href={`/recipes/${post.id}`}>
-                <div
-                    class="w-80 h-96 bg-gray-100 border border-[#00000000] hover:border-[var(--yellow)] box-border shadow-black duration-150 transition-all shadow-hover flex flex-col"
-                >
-                    {#if post.thumbnail != null}
-                        <img
-                            class="w-full h-48"
-                            alt="Food thumbnail"
-                            src={endpoint(`/thumbnails/${post.thumbnail}`)}
-                        />
-                    {:else}
-                        <img
-                            class="w-full h-48"
-                            alt="Food thumbnail"
-                            src={defaultThumbnail}
-                        />
-                    {/if}
-                    <div class="pb-3 px-3 pt-2 flex flex-col h-full">
-                        <div class="h-1/2">
-                            <h1 class="text-xl font-bold">{post.title}</h1>
-                            <p class="text-sm text-gray-700">
-                                {post.description}
-                            </p>
-                        </div>
-                        <div class="mt-4 flex flex-row justify-end items-end h-1/2">
-                            <UserPreview user={post.poster} />
-                        </div>
-                    </div>
-                </div>
-            </a>
+            <RecipeDisplay post={post} />
         {/each}
     </div>
 {/if}
