@@ -1,25 +1,26 @@
 use std::{
-    fs::{self, rename, File},
-    io::{BufWriter, Read, Write},
+    fs::{self, File},
+    io::{BufWriter, Write},
     path::Path,
 };
 
 use crate::{
     database::models::{recipe::Recipe, recipe_thumbnails::RecipeThumbnail},
     extractors::auth::Authorized,
-    middleware::auth::AuthenticationExtension,
     pretty_error,
     recipe_io::RecipeFileJson,
-    routes::{error::PrettyErrorResponse, recipes::helpers::FullRecipePayload},
+    routes::{
+        error::PrettyErrorResponse,
+        recipes::helpers::{get_recipe_file, FullRecipePayload},
+    },
     static_files::helpers::rename_temp_file,
 };
-use actix_multipart::{form::MultipartForm, Multipart};
+use actix_multipart::form::MultipartForm;
 use actix_web::{
     get,
     web::{self, Data},
-    HttpMessage, HttpRequest, HttpResponse, Responder,
+    HttpResponse, Responder,
 };
-use futures::TryStreamExt;
 use serde_json::json;
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
@@ -66,22 +67,7 @@ pub async fn get_recipes(
     let mut json_values: Vec<serde_json::Value> = Vec::new();
     for recipe in recipes.iter() {
         // Read recipe json
-        let file_path = RECIPE_DIR.to_string() + recipe.recipe_file_path.as_str();
-        let file = File::open(file_path);
-        if let Err(e) = file {
-            pretty_error!(
-                "Recipe file doesn't exist".to_string(),
-                e.to_string(),
-                error
-            );
-
-            return HttpResponse::InternalServerError().json(error);
-        }
-        let mut file = file.unwrap();
-        let mut data = String::new();
-        file.read_to_string(&mut data).unwrap();
-
-        let recipe_json = serde_json::from_str::<RecipeFileJson>(&data);
+        let recipe_json = get_recipe_file(recipe);
         if let Err(e) = recipe_json {
             pretty_error!("Recipe file is invalid".to_string(), e.to_string(), error);
 
@@ -126,23 +112,7 @@ pub async fn get_recipe_by_poster(
     let mut json_values: Vec<serde_json::Value> = Vec::new();
 
     for recipe in recipes.iter() {
-        let file_path = RECIPE_DIR.to_string() + recipe.recipe_file_path.as_str();
-        let file = File::open(file_path);
-        if let Err(e) = file {
-            pretty_error!(
-                "Recipe file doesn't exist".to_string(),
-                e.to_string(),
-                error
-            );
-
-            return HttpResponse::InternalServerError().json(error);
-        }
-
-        let mut file = file.unwrap();
-        let mut data = String::new();
-        file.read_to_string(&mut data).unwrap();
-
-        let recipe_json = serde_json::from_str::<RecipeFileJson>(&data);
+        let recipe_json = get_recipe_file(recipe);
         if let Err(e) = recipe_json {
             pretty_error!("Recipe file is invalid".to_string(), e.to_string(), error);
 
@@ -193,23 +163,7 @@ pub async fn get_recipe(
     };
     let recipe = recipe.unwrap();
 
-    let file_path = RECIPE_DIR.to_string() + recipe.recipe_file_path.as_str();
-    let file = File::open(file_path);
-    if let Err(e) = file {
-        pretty_error!(
-            "Recipe file doesn't exist".to_string(),
-            e.to_string(),
-            error
-        );
-
-        return HttpResponse::InternalServerError().json(error);
-    }
-
-    let mut file = file.unwrap();
-    let mut data = String::new();
-    file.read_to_string(&mut data).unwrap();
-
-    let recipe_json = serde_json::from_str::<RecipeFileJson>(&data);
+    let recipe_json = get_recipe_file(&recipe);
     if let Err(e) = recipe_json {
         pretty_error!("Recipe file is invalid".to_string(), e.to_string(), error);
 
@@ -250,7 +204,7 @@ pub async fn create_recipe(
 
     let recipe = serde_json::from_str::<RecipeFileJson>(&form.recipe.to_string());
 
-    if let Err(err) = recipe {
+    if let Err(_err) = recipe {
         pretty_error!(
             "Invalid recipe",
             "The recipe is invalid, please ensure that all fields are filled out",
@@ -344,7 +298,11 @@ pub async fn create_recipe(
     HttpResponse::Ok().body(recipe_id.to_string())
 }
 
-pub async fn can_edit(authorized: Authorized, path: actix_web::web::Path<i32>, pool: Data<Pool<Postgres>>) -> impl Responder {
+pub async fn can_edit(
+    authorized: Authorized,
+    path: actix_web::web::Path<i32>,
+    pool: Data<Pool<Postgres>>,
+) -> impl Responder {
     let recipe_id = path.into_inner();
     if let Authorized::Failed(reason) = authorized {
         pretty_error!("Unauthorized", reason, error);
@@ -369,10 +327,44 @@ pub async fn can_edit(authorized: Authorized, path: actix_web::web::Path<i32>, p
     let poster_id = poster_id.unwrap();
 
     let authorized = poster_id == uid;
-    let json = json!({
-        "authorized": authorized
-    });
+    let json = if authorized {
+        let recipe = Recipe::get_by_id(&pool, recipe_id).await;
+        if let Err(e) = recipe {
+            pretty_error!(
+                format!("Failed to get recipe with id: {}", recipe_id),
+                e.to_string(),
+                error
+            );
 
+            return HttpResponse::InternalServerError().json(error);
+        }
+        let recipe = recipe.unwrap();
+
+        let recipe_json = get_recipe_file(&recipe);
+        if let Err(e) = recipe_json {
+            pretty_error!("Recipe file is invalid".to_string(), e.to_string(), error);
+
+            return HttpResponse::InternalServerError().json(error);
+        }
+
+        let recipe_json = recipe_json.unwrap();
+        let full_recipe = FullRecipePayload {
+            date_created: recipe.date_created,
+            id: recipe.id,
+            recipe: recipe_json,
+            poster: recipe.poster,
+            thumbnail: recipe.thumbnail,
+        };
+
+        json!({
+            "authorized": authorized,
+            "recipe": full_recipe
+        })
+    } else {
+        json!({
+            "authorized": authorized
+        })
+    };
 
     HttpResponse::Ok().json(json)
 }

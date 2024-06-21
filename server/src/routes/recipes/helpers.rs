@@ -1,8 +1,15 @@
+use std::{fs::File, io::Read};
+
 use actix_multipart::form::{tempfile::TempFile, text::Text, MultipartForm};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
-use crate::{database::models::recipe::Poster, recipe_io::RecipeFileJson};
+use crate::{
+    database::models::recipe::{Poster, RecipeWithPoster},
+    recipe_io::RecipeFileJson,
+};
+
+use super::constants::RECIPE_DIR;
 
 #[derive(Deserialize, Clone, Copy)]
 pub struct GetRecipeQueryParams {
@@ -14,7 +21,7 @@ pub struct GetRecipeQueryParams {
 pub struct CreateRecipeForm {
     #[multipart(limit = "2MB")]
     pub thumbnail: Option<TempFile>,
-    pub recipe: Text<String>
+    pub recipe: Text<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -23,5 +30,15 @@ pub struct FullRecipePayload {
     pub poster: Poster,
     pub id: i32,
     pub date_created: chrono::DateTime<Utc>,
-    pub thumbnail: Option<String>
+    pub thumbnail: Option<String>,
+}
+
+pub fn get_recipe_file(recipe: &RecipeWithPoster) -> anyhow::Result<RecipeFileJson> {
+    let file_path = RECIPE_DIR.to_string() + recipe.recipe_file_path.as_str();
+    let mut file = File::open(file_path)?;
+    let mut data = String::new();
+    file.read_to_string(&mut data).unwrap();
+    let recipe_json = serde_json::from_str::<RecipeFileJson>(&data)?;
+
+    Ok(recipe_json)
 }
