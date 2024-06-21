@@ -27,7 +27,7 @@ use uuid::Uuid;
 
 use super::{
     constants::RECIPE_DIR,
-    helpers::{CreateRecipeForm, GetRecipeQueryParams},
+    helpers::{create_recipe_file, CreateRecipeForm, EditRecipeForm, GetRecipeQueryParams},
 };
 
 #[get("/all")]
@@ -182,6 +182,76 @@ pub async fn get_recipe(
     HttpResponse::Ok().json(full_recipe)
 }
 
+pub async fn edit_recipe(
+    authorized: Authorized,
+    MultipartForm(form): MultipartForm<EditRecipeForm>,
+    pool: Data<Pool<Postgres>>
+) -> impl Responder {
+    if let Authorized::Failed(reason) = authorized {
+        pretty_error!("Unauthorized", reason, error);
+
+        return HttpResponse::Unauthorized().json(error);
+    }
+
+    let Authorized::Passed(uid, _username) = authorized else {
+        panic!("Despite the if let authorized::failed, we still panicked");
+    };
+
+    let recipe = Recipe::get_by_id(&pool, *form.recipe_id).await;
+    if let Err(e) = recipe {
+        pretty_error!(
+            format!("Failed to get recipe with id: {}", *form.recipe_id),
+            e.to_string(),
+            error
+        );
+
+        return HttpResponse::NotFound().json(error);
+    };
+
+    let recipe = recipe.unwrap();
+    if !(recipe.poster.uid == uid) {
+        pretty_error!(
+            format!("Failed to edit recipe"),
+            "Poster id and submitter id do not match",
+            error
+        );
+
+        return HttpResponse::Unauthorized().json(error);
+    }
+
+    let recipe_json = serde_json::from_str::<RecipeFileJson>(&form.recipe.to_string());
+    if let Err(_err) = recipe_json {
+        pretty_error!(
+            "Invalid recipe",
+            "The recipe is invalid, please ensure that all fields are filled out",
+            error
+        );
+
+        return HttpResponse::BadRequest().json(error);
+    }
+    let recipe_json = recipe_json.unwrap();
+
+    // Very unlikely, but better to be robust than not
+    if !Path::new(RECIPE_DIR).exists() {
+        let create_dir = fs::create_dir_all(RECIPE_DIR);
+
+        if let Err(e) = create_dir {
+            pretty_error!("Failed to create dir on recipe save", e.to_string(), error);
+
+            return HttpResponse::InternalServerError().json(error);
+        }
+    }
+
+    let file_path = RECIPE_DIR.to_owned() + &recipe.recipe_file_path;
+    if let Err(e) = create_recipe_file(file_path.clone(), &recipe_json) {
+        pretty_error!("Failed to save recipe file", e.to_string(), error);
+
+        return HttpResponse::InternalServerError().json(error);
+    }
+
+    HttpResponse::Ok().body("Succesfully edited recipe")
+}
+
 // #[post(/create)]
 pub async fn create_recipe(
     authorized: Authorized,
@@ -231,27 +301,8 @@ pub async fn create_recipe(
         }
     }
 
-    let file = File::create(file_path.clone());
-    if let Err(e) = file {
+    if let Err(e) = create_recipe_file(file_path.clone(), &recipe) {
         pretty_error!("Failed to save recipe file", e.to_string(), error);
-
-        return HttpResponse::InternalServerError().json(error);
-    }
-
-    let file = file.unwrap();
-    let mut writer = BufWriter::new(file);
-    let write = serde_json::to_writer(&mut writer, &recipe);
-
-    if let Err(e) = write {
-        pretty_error!("Failed to write to recipe file", e.to_string(), error);
-
-        return HttpResponse::InternalServerError().json(error);
-    }
-
-    let flush = writer.flush();
-
-    if let Err(e) = flush {
-        pretty_error!("Failed to flush recipe writer", e.to_string(), error);
 
         return HttpResponse::InternalServerError().json(error);
     }

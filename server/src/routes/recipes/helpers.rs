@@ -1,4 +1,7 @@
-use std::{fs::File, io::Read};
+use std::{
+    fs::File,
+    io::{BufWriter, Read, Write},
+};
 
 use actix_multipart::form::{tempfile::TempFile, text::Text, MultipartForm};
 use chrono::Utc;
@@ -24,6 +27,13 @@ pub struct CreateRecipeForm {
     pub recipe: Text<String>,
 }
 
+#[derive(Debug, MultipartForm)]
+pub struct EditRecipeForm {
+    pub thumbnail: Option<TempFile>,
+    pub recipe: Text<String>,
+    pub recipe_id: Text<i32>,
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct FullRecipePayload {
     pub recipe: RecipeFileJson,
@@ -31,6 +41,15 @@ pub struct FullRecipePayload {
     pub id: i32,
     pub date_created: chrono::DateTime<Utc>,
     pub thumbnail: Option<String>,
+}
+
+pub fn create_recipe_file(file_path: String, recipe: &RecipeFileJson) -> anyhow::Result<()> {
+    let file = File::create(file_path.clone())?;
+    let mut writer = BufWriter::new(file);
+    serde_json::to_writer(&mut writer, recipe)?;
+    writer.flush()?;
+
+    Ok(())
 }
 
 pub fn get_recipe_file(recipe: &RecipeWithPoster) -> anyhow::Result<RecipeFileJson> {

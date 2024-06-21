@@ -10,7 +10,9 @@ use dotenv::dotenv;
 use middleware::auth::Authentication;
 use routes::{
     account::services::*,
-    recipes::services::{can_edit, create_recipe, get_recipe, get_recipe_by_poster, get_recipes},
+    recipes::services::{
+        can_edit, create_recipe, edit_recipe, get_recipe, get_recipe_by_poster, get_recipes,
+    },
     users::services::{get_all_users, get_user_by_id, login_user, register_user},
 };
 use sqlx::postgres::PgPoolOptions;
@@ -82,6 +84,11 @@ async fn main() -> std::io::Result<()> {
                                 web::resource("/request_edit/{recipe_id}")
                                     .wrap(Authentication)
                                     .route(web::get().to(can_edit)),
+                            )
+                            .service(
+                                web::resource("/edit")
+                                    .wrap(Authentication)
+                                    .route(web::post().to(edit_recipe)),
                             )
                             .service(get_recipe_by_poster)
                             .service(get_recipes)
