@@ -78,12 +78,19 @@ export const getRecipesByUser = async (uid: number, fetch: Function): Promise<Re
     return { collection: data } as RecipeCollection<RecipePreview>;
 }
 
-export type RequestEdit = {
+type WithRecipe = {
     type: "REQUEST_RECIPE_EDIT",
-    authorized: boolean
+    authorized: true,
+    recipe: Recipe,
 }
 
-export const requestRecipeEdit = async (bearer: string, recipe_id: number, fetch: Function): Promise<ResponseError | RequestEdit> => {
+type NoRecipe = {
+    type: "REQUEST_RECIPE_EDIT",
+    authorized: false,
+    recipe?: never,
+}
+
+export const requestRecipeEdit = async (bearer: string, recipe_id: number, fetch: Function): Promise<ResponseError | (WithRecipe | NoRecipe)> => {
     let response = await fetch(endpoint(`/recipes/request_edit/${recipe_id}`),
         {
             method: "GET",
@@ -98,5 +105,5 @@ export const requestRecipeEdit = async (bearer: string, recipe_id: number, fetch
         return data as ResponseError
     }
 
-    return data as RequestEdit;
+    return data as (WithRecipe | NoRecipe);
 }

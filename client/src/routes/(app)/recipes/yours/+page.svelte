@@ -26,12 +26,12 @@
                         <p class="text-base font-light">{recipe.description}</p>
                     </div>
                     <div class="w-full flex justify-end">
-                        <button
+                        <a
                             class="cursor-pointer h-16 w-16 bg-[var(--yellow)] ml-4 hover:bg-[var(--dark-yellow)] duration-200 flex justify-center items-center"
-                            type="button"
+                            href={`/recipes/${recipe.id}/edit`}
                         >
                             <p class="tracking-widest font-medium">EDIT</p>
-                        </button>
+                        </a>
                         <button
                             class="cursor-pointer h-16 w-16 bg-[var(--yellow)] ml-4 hover:bg-[var(--dark-yellow)] duration-200 flex justify-center items-center"
                             type="button"
