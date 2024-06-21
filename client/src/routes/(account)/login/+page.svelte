@@ -3,7 +3,7 @@
     import Title from "../../../components/Title.svelte";
     import HiddenSinglelineInput from "../../../components/HiddenSinglelineInput.svelte";
     import ErrorBox from "../../../components/ErrorBox.svelte";
-    import { JWT_TOKEN_KEY, attemptJWTLogin, user } from "$lib/login";
+    import { JWT_TOKEN_KEY, attemptJWTLogin, getBearer, user } from "$lib/login";
     import { goto } from "$app/navigation";
     import { endpoint } from "$lib/api";
     import type { ResponseError } from "$lib/routes/error";
@@ -40,7 +40,7 @@
         // Makes sure nothin tampered with u feel
         window.localStorage[JWT_TOKEN_KEY] = data.jwt;
 
-        let userDetails = await attemptJWTLogin(data.jwt, window.fetch);
+        let userDetails = await attemptJWTLogin(getBearer() as string, window.fetch);
         if (userDetails == null) {
             return;
         }

@@ -1,10 +1,10 @@
 export const ssr = false;
 
-import { JWT_TOKEN_KEY, attemptJWTLogin, user } from "$lib/login";
+import { JWT_TOKEN_KEY, attemptJWTLogin, getBearer, user } from "$lib/login";
 import type { LayoutLoad } from "./$types";
 
 export const load: LayoutLoad = async ({ fetch }) => {
-    let key = window.localStorage[JWT_TOKEN_KEY];
+    let key = getBearer(); 
     if (key == null) {
         return;
     }
