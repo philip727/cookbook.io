@@ -62,6 +62,7 @@
                         <a
                             on:click={() => (showDropdown = false)}
                             href={`/profile/${signedInUser.uid}`}
+                            draggable="false"
                         >
                             <h1 class="hover:text-[var(--green)] duration-150">
                                 PROFILE
@@ -70,6 +71,7 @@
                         <a
                             on:click={() => (showDropdown = false)}
                             href={`/recipes/yours`}
+                            draggable="false"
                         >
                             <h1 class="hover:text-[var(--green)] duration-150">
                                 MY RECIPES
@@ -78,6 +80,7 @@
                         <a
                             on:click={() => (showDropdown = false)}
                             href="/account"
+                            draggable="false"
                         >
                             <h1 class="hover:text-[var(--green)] duration-150">
                                 ACCOUNT
@@ -90,6 +93,7 @@
                                 goto("/")
                             }}
                             class="w-32 bg-[var(--yellow)] hover:bg-[var(--dark-yellow)] py-2 transition-all duration-200"
+                            draggable="false"
                         >
                             <p class="text-sm">LOGOUT</p>
                         </button>

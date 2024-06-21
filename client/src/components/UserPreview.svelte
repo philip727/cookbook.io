@@ -13,6 +13,7 @@
                 src={endpoint(`/pfp/${user.picture}`)}
                 alt="User profile"
                 class="h-12 w-12 object-cover rounded-full"
+                draggable="false"
             />
         {:else}
             <img
@@ -20,6 +21,7 @@
                 src={`https://api.dicebear.com/8.x/shapes/svg?seed=${user.username}`}
                 alt="User profile"
                 class="h-12 w-12 object-cover rounded-full"
+                draggable="false"
             />
         {/if}
         <h1 class="text-lg font-bold">
