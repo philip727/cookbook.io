@@ -44,6 +44,16 @@ impl Recipe {
         Ok(rows)
     }
 
+    pub async fn get_poster(pool: &Pool<Postgres>, recipe_id: i32) -> anyhow::Result<i32> {
+        let row = sqlx::query(r#"SELECT user_id FROM recipes WHERE id = $1"#)
+            .bind(recipe_id)
+            .fetch_one(pool)
+            .await?;
+
+        let uid: i32 = row.get("user_id");
+        Ok(uid)
+    }
+
     pub async fn get_paginated_recipes_with_poster(
         pool: &Pool<Postgres>,
         offset: u32,

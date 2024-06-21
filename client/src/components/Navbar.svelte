@@ -67,11 +67,14 @@
                                 PROFILE
                             </h1>
                         </a>
-                        <button>
+                        <a
+                            on:click={() => (showDropdown = false)}
+                            href={`/recipes/yours`}
+                        >
                             <h1 class="hover:text-[var(--green)] duration-150">
                                 MY RECIPES
                             </h1>
-                        </button>
+                        </a>
                         <a
                             on:click={() => (showDropdown = false)}
                             href="/account"

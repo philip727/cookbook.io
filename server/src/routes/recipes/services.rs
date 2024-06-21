@@ -343,3 +343,36 @@ pub async fn create_recipe(
 
     HttpResponse::Ok().body(recipe_id.to_string())
 }
+
+pub async fn can_edit(authorized: Authorized, path: actix_web::web::Path<i32>, pool: Data<Pool<Postgres>>) -> impl Responder {
+    let recipe_id = path.into_inner();
+    if let Authorized::Failed(reason) = authorized {
+        pretty_error!("Unauthorized", reason, error);
+
+        return HttpResponse::Unauthorized().json(error);
+    }
+
+    let Authorized::Passed(uid, _username) = authorized else {
+        panic!("Despite the if let authorized::failed, we still panicked");
+    };
+
+    let poster_id = Recipe::get_poster(&pool, recipe_id).await;
+    if let Err(e) = poster_id {
+        pretty_error!(
+            format!("Failed to get poster of recipe with id: {}", recipe_id),
+            e.to_string(),
+            error
+        );
+
+        return HttpResponse::InternalServerError().json(error);
+    }
+    let poster_id = poster_id.unwrap();
+
+    let authorized = poster_id == uid;
+    let json = json!({
+        "authorized": authorized
+    });
+
+
+    HttpResponse::Ok().json(json)
+}

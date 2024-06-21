@@ -40,7 +40,7 @@
                 </div>
             </div>
         </div>
-        {#if data.recipes.collection}
+        {#if data.recipes.type !== "RESPONSE_ERROR"}
             <div
                 class="flex flex-row flex-wrap gap-4 items-center justify-start mt-8"
             >

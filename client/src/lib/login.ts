@@ -10,6 +10,10 @@ export type JWTClaims = {
 
 export const user = writable<UserDetails | null>(null);
 
+export const asBearer = (key: string): string => {
+    return "Bearer " + key;
+}
+
 export const getBearer = (): string | null => {
     let key = window.localStorage.getItem(JWT_TOKEN_KEY);
     if (key == null) {
@@ -21,12 +25,11 @@ export const getBearer = (): string | null => {
 
 export const requestJWTVerification = async (key: string, fetch: Function): Promise<JWTClaims | null> => {
     try {
-        let bearer = "Bearer " + key;
         let response = await fetch(
             endpoint("/account/verify") as string,
             {
                 headers: {
-                    Authorization: bearer,
+                    Authorization: key,
                 },
             },
         );
@@ -38,8 +41,7 @@ export const requestJWTVerification = async (key: string, fetch: Function): Prom
         }
 
         // return jwt claims
-        const data = await response.json() as JWTClaims;
-        return data;
+        return await response.json() as JWTClaims;
     } catch (error) {
         return null
     }
