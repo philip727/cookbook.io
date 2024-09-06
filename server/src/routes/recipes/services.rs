@@ -5,15 +5,10 @@ use std::{
 };
 
 use crate::{
-    database::models::{recipe::Recipe, recipe_thumbnails::RecipeThumbnail},
-    extractors::auth::Authorized,
-    pretty_error,
-    recipe_io::RecipeFileJson,
-    routes::{
+    database::models::{recipe::Recipe, recipe_thumbnails::RecipeThumbnail}, extractors::auth::Authorized, pretty_error, recipe_io::RecipeFileJson, routes::{
         error::PrettyErrorResponse,
         recipes::helpers::{get_recipe_file, FullRecipePayload},
-    },
-    static_files::helpers::rename_temp_file,
+    }, static_files::helpers::rename_temp_file
 };
 use actix_multipart::form::MultipartForm;
 use actix_web::{
