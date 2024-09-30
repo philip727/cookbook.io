@@ -37,7 +37,7 @@ async fn main() -> std::io::Result<()> {
 
     let pool = PgPoolOptions::new()
         .idle_timeout(Duration::from_secs(10))
-        .max_connections(10)
+        .max_connections(50)
         .connect(&std::env::var("DATABASE_URL").expect("DATABASE_URL must be set"))
         .await
         .expect("Couldnt conect to postgres db");

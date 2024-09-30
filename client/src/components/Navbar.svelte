@@ -9,7 +9,6 @@
 
     let signedInUser: UserDetails | null = null;
     user.subscribe(val => {
-        console.log(val);
         signedInUser = val;
     })
 
@@ -53,7 +52,7 @@
                         showDropdown = !showDropdown;
                     }}
                 >
-                    <UserPreview user={signedInUser} />
+                    <UserPreview ignoreClick={true} user={signedInUser} />
                 </button>
                 {#if showDropdown}
                     <div

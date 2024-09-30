@@ -4,8 +4,6 @@
     import deleteBin from "$lib/images/recycle-bin.svg";
 
     export let data: PageData;
-
-    console.log(data);
 </script>
 
 <section>

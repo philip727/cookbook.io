@@ -1,5 +1,6 @@
 <script lang="ts">
     import { endpoint } from "$lib/api";
+    import { isResponseError } from "$lib/routes/error";
     import RecipeDisplay from "../../../../components/RecipeDisplay.svelte";
     import type { PageData } from "./$types";
 
@@ -40,7 +41,7 @@
                 </div>
             </div>
         </div>
-        {#if data.recipes.type !== "RESPONSE_ERROR"}
+        {#if !isResponseError(data.recipes) && data.recipes.type !== "RESPONSE_ERROR"}
             <div
                 class="flex flex-row flex-wrap gap-4 items-center justify-start mt-8"
             >
