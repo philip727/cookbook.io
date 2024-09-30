@@ -46,7 +46,7 @@ pub fn rename_temp_file(
 
     let file_name: String = new_file_name.to_owned() + "." + &file_ext;
     let mut file_path = PathBuf::from_str(new_path)?;
-    file_path.push(&sanitize_filename::sanitize(&file_name));
+    file_path.push(sanitize_filename::sanitize(&file_name));
     std::fs::rename(temp_file_path, file_path)?;
 
     Ok(file_name)

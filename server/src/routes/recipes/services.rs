@@ -41,7 +41,7 @@ pub async fn get_recipes(
         None => Some(10),
     };
 
-    if let None = pagination.offset {
+    if pagination.offset.is_none() {
         pagination.offset = Some(0);
     }
 
@@ -204,7 +204,7 @@ pub async fn edit_recipe(
     };
 
     let recipe = recipe.unwrap();
-    if !(recipe.poster.uid == uid) {
+    if recipe.poster.uid != uid {
         pretty_error!(
             format!("Failed to edit recipe"),
             "Poster id and submitter id do not match",
@@ -243,6 +243,31 @@ pub async fn edit_recipe(
 
         return HttpResponse::InternalServerError().json(error);
     }
+
+    if let Some(temp_thumbnail_file) = form.thumbnail {
+        let Some(mime_type) = &temp_thumbnail_file.content_type else {
+            pretty_error!("Invalid thumbnail", "Couldn't get mime type", error);
+
+            return HttpResponse::BadRequest().json(error);
+        };
+
+        if mime_type != &"image/jpeg" && mime_type != &"image/png" {
+            pretty_error!(
+                "Invalid thumbnail",
+                "An invalid mime type was passed, only jpeg/png",
+                error
+            );
+
+            return HttpResponse::BadRequest().json(error);
+        }
+
+        // Does not need to resolve or return
+        // If it fails we just use default thumbnail
+        let file_name = uid.to_string() + "-" + &recipe.recipe_file_path;
+        if let Ok(file_name) = rename_temp_file(temp_thumbnail_file, "./thumbnails", &file_name) {
+            let _ = RecipeThumbnail::insert_or_update(&pool, form.recipe_id.0, file_name).await;
+        }
+    };
 
     HttpResponse::Ok().body("Succesfully edited recipe")
 }
@@ -333,11 +358,8 @@ pub async fn create_recipe(
 
         // Does not need to resolve or return
         // If it fails we just use default thumbnail
-        match rename_temp_file(temp_thumbnail_file, "./thumbnails", &file_name) {
-            Ok(file_name) => {
-                let _ = RecipeThumbnail::insert_or_update(&pool, recipe_id, file_name).await;
-            }
-            _ => {}
+        if let Ok(file_name) = rename_temp_file(temp_thumbnail_file, "./thumbnails", &file_name) {
+            let _ = RecipeThumbnail::insert_or_update(&pool, recipe_id, file_name).await;
         }
     };
 

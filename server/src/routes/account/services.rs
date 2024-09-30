@@ -1,9 +1,6 @@
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
-
 use actix_multipart::form::MultipartForm;
-use actix_web::web::{self, Data};
-use actix_web::{HttpMessage, HttpRequest, HttpResponse, Responder};
+use actix_web::web::Data;
+use actix_web::{HttpResponse, Responder};
 use serde_json::json;
 use sqlx::{Pool, Postgres};
 
@@ -11,7 +8,6 @@ use crate::database::models::profile_picture::ProfilePicture;
 use crate::database::models::user::User;
 use crate::database::models::user_details::UserDetails;
 use crate::extractors::auth::Authorized;
-use crate::helpers::is_alnum_whitespace_and_ex_chars;
 use crate::pretty_error;
 use crate::routes::error::PrettyErrorResponse;
 use crate::static_files::helpers::rename_temp_file;

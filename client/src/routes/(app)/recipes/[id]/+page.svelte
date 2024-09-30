@@ -1,6 +1,7 @@
 <script lang="ts">
     import { endpoint } from "$lib/api";
     import { Measurement, type Ingredient } from "$lib/routes/recipe";
+    import defaultThumbnail from "$lib/images/default-thumbnail.jpg"
     import UserPreview from "../../../../components/UserPreview.svelte";
     import type { PageData } from "./$types";
 
@@ -94,13 +95,19 @@
                     <p class="text-lg font-light">
                         {data.recipe.description}
                     </p>
-                    <img
-                        alt="Recipe thumbnail"
-                        class="w-[600px] h-96 mt-2"
-                        src={endpoint(
-                            `/thumbnails/${data.thumbnail}`,
-                        )}
-                    />
+                    {#if data.thumbnail != null}
+                        <img
+                            alt="Recipe thumbnail"
+                            class="w-[600px] h-96 mt-2"
+                            src={endpoint(`/thumbnails/${data.thumbnail}`)}
+                        />
+                    {:else}
+                        <img
+                            class="w-[600px] h-96 mt-2"
+                            alt="Food thumbnail"
+                            src={defaultThumbnail}
+                        />
+                    {/if}
                 </article>
                 <p class="mt-8 text-3xl font-semibold">Ingredients</p>
                 <ul

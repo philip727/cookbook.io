@@ -1,6 +1,11 @@
 use std::time::Duration;
 
 use actix_cors::Cors;
+use actix_extensible_rate_limit::{
+    backend::{memory::InMemoryBackend, SimpleInputFunctionBuilder},
+    RateLimiter,
+};
+//use actix_ratelimit::{MemoryStore, MemoryStoreActor, RateLimiter};
 use actix_web::{
     middleware::Logger,
     web::{self, scope, to, Data},
@@ -37,6 +42,9 @@ async fn main() -> std::io::Result<()> {
         .await
         .expect("Couldnt conect to postgres db");
 
+    let backend = InMemoryBackend::builder().build();
+
+    //    let store = MemoryStore::new();
     HttpServer::new(move || {
         let cors = Cors::default()
             .send_wildcard()
@@ -45,13 +53,31 @@ async fn main() -> std::io::Result<()> {
             .allow_any_header()
             .max_age(3600);
 
+        let input = SimpleInputFunctionBuilder::new(Duration::from_secs(60), 200)
+            .real_ip_key()
+            .build();
+
+        let limiter_middleware = RateLimiter::builder(backend.clone(), input)
+            .add_headers()
+            .build();
+
         App::new()
             .wrap(cors)
+            .wrap(limiter_middleware)
+            //           .wrap(
+            //               RateLimiter::new(MemoryStoreActor::from(store.clone()).start())
+            //                   .with_interval(Duration::from_secs(60))
+            //                   .with_max_requests(100),
+            //           )
             .app_data(Data::new(pool.clone()))
             .service(
                 scope("/v1")
-                    .service(actix_files::Files::new("/thumbnails", "./thumbnails"))
-                    .service(actix_files::Files::new("/pfp", "./profile_pictures"))
+                    .service(
+                        actix_files::Files::new("/thumbnails", "./thumbnails").show_files_listing(),
+                    )
+                    .service(
+                        actix_files::Files::new("/pfp", "./profile_pictures").show_files_listing(),
+                    )
                     .service(
                         scope("/users")
                             .service(get_all_users)
